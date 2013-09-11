@@ -79,6 +79,16 @@ message CharacterInfo {
     optional OccupationUpgradeInfo occupationUpgradeInfo = 16;
 }
 
+message CreateAvatarRequest {
+    required string device_id = 1;
+    required string name = 2;
+    required int32 meta_id = 3;
+}
+
+extend TransUnit {
+    optional CreateAvatarRequest createAvatarRequest = 1003;
+}
+
 message LogInRequest {
     required string device_id = 1;
     required string client_version = 2;
@@ -86,7 +96,7 @@ message LogInRequest {
 }
 
 extend TransUnit {
-    optional LogInRequest msg = 1001;
+    optional LogInRequest loginRequest = 1001;
 }
 
 message LogInReply {
@@ -100,7 +110,7 @@ message LogInReply {
 }
 
 extend TransUnit {
-    optional LogInReply msg = 1002;
+    optional LogInReply loginReply = 1002;
 }
 
 message AccountInfo {
@@ -114,7 +124,7 @@ message AccountInfo {
 }
 
 extend TransUnit {
-    optional AccountInfo msg = 1000;
+    optional AccountInfo accountInfo = 1000;
 }
 
 message BagItem {
@@ -163,7 +173,7 @@ message MapInitMessage {
 }
 
 extend TransUnit {
-    optional MapInitMessage msg = 1015;
+    optional MapInitMessage mapInitMessage = 1015;
 }
 
 message AvatarEnterVisionMessage {
@@ -174,5 +184,5 @@ message AvatarEnterVisionMessage {
 }
 
 extend TransUnit {
-    optional AvatarEnterVisionMessage msg = 1005;
+    optional AvatarEnterVisionMessage avatarEnterVisionMessage = 1005;
 }

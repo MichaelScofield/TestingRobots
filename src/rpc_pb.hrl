@@ -87,6 +87,15 @@
 }).
 -endif.
 
+-ifndef(CREATEAVATARREQUEST_PB_H).
+-define(CREATEAVATARREQUEST_PB_H, true).
+-record(createavatarrequest, {
+    device_id = erlang:error({required, device_id}),
+    name = erlang:error({required, name}),
+    meta_id = erlang:error({required, meta_id})
+}).
+-endif.
+
 -ifndef(LOGINREQUEST_PB_H).
 -define(LOGINREQUEST_PB_H, true).
 -record(loginrequest, {

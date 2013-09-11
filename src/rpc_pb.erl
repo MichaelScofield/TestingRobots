@@ -18,6 +18,9 @@
 	 encode_loginreply/1, decode_loginreply/1,
 	 delimited_decode_loginreply/1, encode_loginrequest/1,
 	 decode_loginrequest/1, delimited_decode_loginrequest/1,
+	 encode_createavatarrequest/1,
+	 decode_createavatarrequest/1,
+	 delimited_decode_createavatarrequest/1,
 	 encode_characterinfo/1, decode_characterinfo/1,
 	 delimited_decode_characterinfo/1,
 	 encode_occupationupgradeinfo/1,
@@ -63,6 +66,9 @@
 
 -record(loginrequest,
 	{device_id, client_version, meta_crc32}).
+
+-record(createavatarrequest,
+	{device_id, name, meta_id}).
 
 -record(characterinfo,
 	{id, accountid, name, metaid, exp, level, place,
@@ -153,6 +159,13 @@ encode_loginrequest(Record)
     when is_record(Record, loginrequest) ->
     encode(loginrequest, Record).
 
+encode_createavatarrequest(Records)
+    when is_list(Records) ->
+    delimited_encode(Records);
+encode_createavatarrequest(Record)
+    when is_record(Record, createavatarrequest) ->
+    encode(createavatarrequest, Record).
+
 encode_characterinfo(Records) when is_list(Records) ->
     delimited_encode(Records);
 encode_characterinfo(Record)
@@ -217,6 +230,12 @@ encode(characterinfo, Records) when is_list(Records) ->
     delimited_encode(Records);
 encode(characterinfo, Record) ->
     [iolist(characterinfo, Record)
+     | encode_extensions(Record)];
+encode(createavatarrequest, Records)
+    when is_list(Records) ->
+    delimited_encode(Records);
+encode(createavatarrequest, Record) ->
+    [iolist(createavatarrequest, Record)
      | encode_extensions(Record)];
 encode(loginrequest, Records) when is_list(Records) ->
     delimited_encode(Records);
@@ -447,6 +466,17 @@ iolist(characterinfo, Record) ->
 	  with_default(Record#characterinfo.occupationupgradeinfo,
 		       none),
 	  occupationupgradeinfo, [])];
+iolist(createavatarrequest, Record) ->
+    [pack(1, required,
+	  with_default(Record#createavatarrequest.device_id,
+		       none),
+	  string, []),
+     pack(2, required,
+	  with_default(Record#createavatarrequest.name, none),
+	  string, []),
+     pack(3, required,
+	  with_default(Record#createavatarrequest.meta_id, none),
+	  int32, [])];
 iolist(loginrequest, Record) ->
     [pack(1, required,
 	  with_default(Record#loginrequest.device_id, none),
@@ -664,6 +694,10 @@ decode_loginreply(Bytes) when is_binary(Bytes) ->
 decode_loginrequest(Bytes) when is_binary(Bytes) ->
     decode(loginrequest, Bytes).
 
+decode_createavatarrequest(Bytes)
+    when is_binary(Bytes) ->
+    decode(createavatarrequest, Bytes).
+
 decode_characterinfo(Bytes) when is_binary(Bytes) ->
     decode(characterinfo, Bytes).
 
@@ -700,6 +734,9 @@ delimited_decode_occupationupgradeinfo(Bytes) ->
 
 delimited_decode_characterinfo(Bytes) ->
     delimited_decode(characterinfo, Bytes).
+
+delimited_decode_createavatarrequest(Bytes) ->
+    delimited_decode(createavatarrequest, Bytes).
 
 delimited_decode_loginrequest(Bytes) ->
     delimited_decode(loginrequest, Bytes).
@@ -820,6 +857,13 @@ decode(characterinfo, Bytes) when is_binary(Bytes) ->
     Defaults = [{14, equipments, []}],
     Decoded = decode(Bytes, Types, Defaults),
     to_record(characterinfo, Decoded);
+decode(createavatarrequest, Bytes)
+    when is_binary(Bytes) ->
+    Types = [{3, meta_id, int32, []}, {2, name, string, []},
+	     {1, device_id, string, []}],
+    Defaults = [],
+    Decoded = decode(Bytes, Types, Defaults),
+    to_record(createavatarrequest, Decoded);
 decode(loginrequest, Bytes) when is_binary(Bytes) ->
     Types = [{3, meta_crc32, string, []},
 	     {2, client_version, string, []},
@@ -1024,6 +1068,15 @@ to_record(characterinfo, DecodedTuples) ->
 			  end,
 			  #characterinfo{}, DecodedTuples),
     Record1;
+to_record(createavatarrequest, DecodedTuples) ->
+    Record1 = lists:foldr(fun ({_FNum, Name, Val},
+			       Record) ->
+				  set_record_field(record_info(fields,
+							       createavatarrequest),
+						   Record, Name, Val)
+			  end,
+			  #createavatarrequest{}, DecodedTuples),
+    Record1;
 to_record(loginrequest, DecodedTuples) ->
     Record1 = lists:foldr(fun ({_FNum, Name, Val},
 			       Record) ->
@@ -1115,14 +1168,18 @@ to_record(avatarentervisionmessage, DecodedTuples) ->
 decode_extensions(#transunit{'$extensions' =
 				 Extensions} =
 		      Record) ->
-    Types = [{1015, msg, mapinitmessage, [is_record]},
-	     {1005, msg, avatarentervisionmessage, [is_record]},
-	     {1002, msg, loginreply, [is_record]},
-	     {1001, msg, loginrequest, [is_record]},
-	     {1000, msg, accountinfo, [is_record]},
+    Types = [{1015, mapInitMessage, mapinitmessage,
+	      [is_record]},
+	     {1005, avatarEnterVisionMessage,
+	      avatarentervisionmessage, [is_record]},
+	     {1003, createAvatarRequest, createavatarrequest,
+	      [is_record]},
+	     {1002, loginReply, loginreply, [is_record]},
+	     {1001, loginRequest, loginrequest, [is_record]},
+	     {1000, accountInfo, accountinfo, [is_record]},
 	     {1, sn, int32, []}, {1, sn, int32, []},
 	     {1, sn, int32, []}, {1, sn, int32, []},
-	     {1, sn, int32, []}],
+	     {1, sn, int32, []}, {1, sn, int32, []}],
     NewExtensions = decode_extensions(Types,
 				      dict:to_list(Extensions), []),
     Record#transunit{'$extensions' = NewExtensions};
@@ -1208,11 +1265,23 @@ has_extension(#transunit{'$extensions' = Extensions},
 	      sn) ->
     dict:is_key(sn, Extensions);
 has_extension(#transunit{'$extensions' = Extensions},
+	      1003) ->
+    dict:is_key(1003, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      createavatarrequest) ->
+    dict:is_key(createavatarrequest, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      1) ->
+    dict:is_key(1, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      sn) ->
+    dict:is_key(sn, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
 	      1001) ->
     dict:is_key(1001, Extensions);
 has_extension(#transunit{'$extensions' = Extensions},
-	      msg) ->
-    dict:is_key(msg, Extensions);
+	      loginrequest) ->
+    dict:is_key(loginrequest, Extensions);
 has_extension(#transunit{'$extensions' = Extensions},
 	      1) ->
     dict:is_key(1, Extensions);
@@ -1223,8 +1292,8 @@ has_extension(#transunit{'$extensions' = Extensions},
 	      1002) ->
     dict:is_key(1002, Extensions);
 has_extension(#transunit{'$extensions' = Extensions},
-	      msg) ->
-    dict:is_key(msg, Extensions);
+	      loginreply) ->
+    dict:is_key(loginreply, Extensions);
 has_extension(#transunit{'$extensions' = Extensions},
 	      1) ->
     dict:is_key(1, Extensions);
@@ -1235,8 +1304,8 @@ has_extension(#transunit{'$extensions' = Extensions},
 	      1000) ->
     dict:is_key(1000, Extensions);
 has_extension(#transunit{'$extensions' = Extensions},
-	      msg) ->
-    dict:is_key(msg, Extensions);
+	      accountinfo) ->
+    dict:is_key(accountinfo, Extensions);
 has_extension(#transunit{'$extensions' = Extensions},
 	      1) ->
     dict:is_key(1, Extensions);
@@ -1247,8 +1316,8 @@ has_extension(#transunit{'$extensions' = Extensions},
 	      1015) ->
     dict:is_key(1015, Extensions);
 has_extension(#transunit{'$extensions' = Extensions},
-	      msg) ->
-    dict:is_key(msg, Extensions);
+	      mapinitmessage) ->
+    dict:is_key(mapinitmessage, Extensions);
 has_extension(#transunit{'$extensions' = Extensions},
 	      1) ->
     dict:is_key(1, Extensions);
@@ -1259,37 +1328,43 @@ has_extension(#transunit{'$extensions' = Extensions},
 	      1005) ->
     dict:is_key(1005, Extensions);
 has_extension(#transunit{'$extensions' = Extensions},
-	      msg) ->
-    dict:is_key(msg, Extensions);
+	      avatarentervisionmessage) ->
+    dict:is_key(avatarentervisionmessage, Extensions);
 has_extension(_Record, _FieldName) -> false.
 
-get_extension(Record, msg)
+get_extension(Record, avatarentervisionmessage)
     when is_record(Record, transunit) ->
     get_extension(Record, 1005);
 get_extension(Record, sn)
     when is_record(Record, transunit) ->
     get_extension(Record, 1);
-get_extension(Record, msg)
+get_extension(Record, mapinitmessage)
     when is_record(Record, transunit) ->
     get_extension(Record, 1015);
 get_extension(Record, sn)
     when is_record(Record, transunit) ->
     get_extension(Record, 1);
-get_extension(Record, msg)
+get_extension(Record, accountinfo)
     when is_record(Record, transunit) ->
     get_extension(Record, 1000);
 get_extension(Record, sn)
     when is_record(Record, transunit) ->
     get_extension(Record, 1);
-get_extension(Record, msg)
+get_extension(Record, loginreply)
     when is_record(Record, transunit) ->
     get_extension(Record, 1002);
 get_extension(Record, sn)
     when is_record(Record, transunit) ->
     get_extension(Record, 1);
-get_extension(Record, msg)
+get_extension(Record, loginrequest)
     when is_record(Record, transunit) ->
     get_extension(Record, 1001);
+get_extension(Record, sn)
+    when is_record(Record, transunit) ->
+    get_extension(Record, 1);
+get_extension(Record, createavatarrequest)
+    when is_record(Record, transunit) ->
+    get_extension(Record, 1003);
 get_extension(Record, sn)
     when is_record(Record, transunit) ->
     get_extension(Record, 1);
@@ -1311,7 +1386,20 @@ set_extension(#transunit{'$extensions' = Extensions} =
     {ok, Record#transunit{'$extensions' = NewExtends}};
 set_extension(#transunit{'$extensions' = Extensions} =
 		  Record,
-	      msg, Value) ->
+	      createavatarrequest, Value) ->
+    NewExtends = dict:store(1003,
+			    {optional, Value, createavatarrequest, none},
+			    Extensions),
+    {ok, Record#transunit{'$extensions' = NewExtends}};
+set_extension(#transunit{'$extensions' = Extensions} =
+		  Record,
+	      sn, Value) ->
+    NewExtends = dict:store(1,
+			    {required, Value, int32, none}, Extensions),
+    {ok, Record#transunit{'$extensions' = NewExtends}};
+set_extension(#transunit{'$extensions' = Extensions} =
+		  Record,
+	      loginrequest, Value) ->
     NewExtends = dict:store(1001,
 			    {optional, Value, loginrequest, none}, Extensions),
     {ok, Record#transunit{'$extensions' = NewExtends}};
@@ -1323,7 +1411,7 @@ set_extension(#transunit{'$extensions' = Extensions} =
     {ok, Record#transunit{'$extensions' = NewExtends}};
 set_extension(#transunit{'$extensions' = Extensions} =
 		  Record,
-	      msg, Value) ->
+	      loginreply, Value) ->
     NewExtends = dict:store(1002,
 			    {optional, Value, loginreply, none}, Extensions),
     {ok, Record#transunit{'$extensions' = NewExtends}};
@@ -1335,7 +1423,7 @@ set_extension(#transunit{'$extensions' = Extensions} =
     {ok, Record#transunit{'$extensions' = NewExtends}};
 set_extension(#transunit{'$extensions' = Extensions} =
 		  Record,
-	      msg, Value) ->
+	      accountinfo, Value) ->
     NewExtends = dict:store(1000,
 			    {optional, Value, accountinfo, none}, Extensions),
     {ok, Record#transunit{'$extensions' = NewExtends}};
@@ -1347,7 +1435,7 @@ set_extension(#transunit{'$extensions' = Extensions} =
     {ok, Record#transunit{'$extensions' = NewExtends}};
 set_extension(#transunit{'$extensions' = Extensions} =
 		  Record,
-	      msg, Value) ->
+	      mapinitmessage, Value) ->
     NewExtends = dict:store(1015,
 			    {optional, Value, mapinitmessage, none},
 			    Extensions),
@@ -1360,7 +1448,7 @@ set_extension(#transunit{'$extensions' = Extensions} =
     {ok, Record#transunit{'$extensions' = NewExtends}};
 set_extension(#transunit{'$extensions' = Extensions} =
 		  Record,
-	      msg, Value) ->
+	      avatarentervisionmessage, Value) ->
     NewExtends = dict:store(1005,
 			    {optional, Value, avatarentervisionmessage, none},
 			    Extensions),
