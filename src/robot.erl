@@ -11,18 +11,19 @@ start() ->
   {ok, Context} = erlzmq:context(),
   {ok, Socket} = erlzmq:socket(Context, dealer),
   ok = erlzmq:setsockopt(Socket, identity, pid_to_list(self())),
-  ServerAddr = "tcp://10.10.9.116:5570",
+  ServerAddr = "tcp://10.10.10.10:5570",
+%%   ServerAddr = "tcp://10.10.9.116:5570",
 %%   ServerAddr = "tcp://127.0.0.1:5570",
   ok = erlzmq:connect(Socket, ServerAddr),
   io:format("connect to ~s success.~n", [ServerAddr]),
-  TransUnit = login_req(),
-%%   TransUnit = create_account_req(),
+%%   TransUnit = login_req(),
+  TransUnit = create_account_req(),
   send(Socket, TransUnit),
   close(Socket),
   terminate(Context).
 
 create_account_req() ->
-  Message = #createavatarrequest{device_id = "TestDeviceId1", name = "Robot1", meta_id = 131011},
+  Message = #createavatarrequest{device_id = "Erobot1", name = "Robot1", meta_id = 131011},
   wrap_transunit(createavatarrequest, Message).
 
 login_req() ->
