@@ -2,12 +2,31 @@
 -module(robot).
 -author("lfc").
 
+-compile([{parse_transform, lager_transform}]).
+
 -include("rpc_pb.hrl").
 
 %% API
--export([start/0]).
+-export([init/2]).
 
-start() ->
+%% For internal usage only.
+-export([create_robot/1]).
+
+init(RobotStartId, RobotCount) when is_integer(RobotStartId), is_integer(RobotCount), RobotStartId > 0, RobotCount > 0 ->
+  lager:start(),
+  init(RobotStartId, RobotCount, 0).
+
+init(RobotStartId, RobotCount, N) ->
+  case N < RobotCount of
+    true ->
+      spawn_link(?MODULE, create_robot, [RobotStartId + N]),
+      init(RobotStartId, RobotCount, N + 1);
+    false ->
+      ok
+  end.
+
+create_robot(RobotId) ->
+  lager:info("create robot id = " ++ integer_to_list(RobotId)),
   {ok, Context} = erlzmq:context(),
   {ok, Socket} = erlzmq:socket(Context, dealer),
   ok = erlzmq:setsockopt(Socket, identity, pid_to_list(self())),
@@ -15,19 +34,23 @@ start() ->
 %%   ServerAddr = "tcp://10.10.9.116:5570",
 %%   ServerAddr = "tcp://127.0.0.1:5570",
   ok = erlzmq:connect(Socket, ServerAddr),
-  io:format("connect to ~s success.~n", [ServerAddr]),
 %%   TransUnit = login_req(),
-  TransUnit = create_account_req(),
+  TransUnit = create_account_req(RobotId),
   send(Socket, TransUnit),
   close(Socket),
   terminate(Context).
 
-create_account_req() ->
-  Message = #createavatarrequest{device_id = "Erobot1", name = "Robot1", meta_id = 131011},
+create_account_req(RobotId) ->
+  Id = integer_to_list(RobotId),
+  DeviceId = "Erobot" ++ Id,
+  Name = "Robot" ++ Id,
+  Message = #createavatarrequest{device_id = DeviceId, name = Name, meta_id = 131011},
   wrap_transunit(createavatarrequest, Message).
 
-login_req() ->
-  Message = #loginrequest{device_id = "TestDeviceId1", client_version = "0.5.0", meta_crc32 = "8414FF96"},
+login_req(RobotId) ->
+  Id = integer_to_list(RobotId),
+  DeviceId = "Erobot" ++ Id,
+  Message = #loginrequest{device_id = DeviceId, client_version = "0.5.0", meta_crc32 = "8414FF96"},
   wrap_transunit(loginrequest, Message).
 
 wrap_transunit(Type, Message) when is_atom(Type) ->
@@ -44,11 +67,10 @@ loop(_Socket, 0) ->
 loop(Socket, N) when N > 0 ->
   case polling(Socket, 100, 10) of
     {error, timeout} ->
-      io:format("Error: Received timeout.~n"),
       loop(Socket, N - 1);
     {ok, ReplyBin} ->
       TransUnit = rpc_pb:decode_transunit(ReplyBin),
-      io:format("ReplyMsg = ~w~n", [TransUnit]),
+      lager:info("ReplyMsg = ~w~n", [TransUnit]),
       loop(Socket, N)
   end.
 
