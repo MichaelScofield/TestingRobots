@@ -30,8 +30,10 @@
 	 delimited_decode_unitattribute/1, encode_geminfo/1,
 	 decode_geminfo/1, delimited_decode_geminfo/1,
 	 encode_equipment/1, decode_equipment/1,
-	 delimited_decode_equipment/1, encode_transunit/1,
-	 decode_transunit/1, delimited_decode_transunit/1]).
+	 delimited_decode_equipment/1, encode_errormessage/1,
+	 decode_errormessage/1, delimited_decode_errormessage/1,
+	 encode_transunit/1, decode_transunit/1,
+	 delimited_decode_transunit/1]).
 
 -export([has_extension/2, extension_size/1,
 	 get_extension/2, set_extension/3]).
@@ -91,6 +93,8 @@
 -record(geminfo, {gem_id, gem_meta_id, upgraderate}).
 
 -record(equipment, {id, metaid, strengthen, geminfo}).
+
+-record(errormessage, {error}).
 
 -record(transunit, {sn, '$extensions'}).
 
@@ -197,6 +201,12 @@ encode_equipment(Record)
     when is_record(Record, equipment) ->
     encode(equipment, Record).
 
+encode_errormessage(Records) when is_list(Records) ->
+    delimited_encode(Records);
+encode_errormessage(Record)
+    when is_record(Record, errormessage) ->
+    encode(errormessage, Record).
+
 encode_transunit(Records) when is_list(Records) ->
     delimited_encode(Records);
 encode_transunit(Record)
@@ -207,6 +217,11 @@ encode(transunit, Records) when is_list(Records) ->
     delimited_encode(Records);
 encode(transunit, Record) ->
     [iolist(transunit, Record) | encode_extensions(Record)];
+encode(errormessage, Records) when is_list(Records) ->
+    delimited_encode(Records);
+encode(errormessage, Record) ->
+    [iolist(errormessage, Record)
+     | encode_extensions(Record)];
 encode(equipment, Records) when is_list(Records) ->
     delimited_encode(Records);
 encode(equipment, Record) ->
@@ -303,6 +318,10 @@ delimited_encode(Records) ->
 iolist(transunit, Record) ->
     [pack(1, required,
 	  with_default(Record#transunit.sn, none), int32, [])];
+iolist(errormessage, Record) ->
+    [pack(1, required,
+	  with_default(Record#errormessage.error, none),
+	  errorcode, [])];
 iolist(equipment, Record) ->
     [pack(1, required,
 	  with_default(Record#equipment.id, none), int64, []),
@@ -651,6 +670,12 @@ enum_to_int(itemtype, 'EMPTY') -> 0;
 enum_to_int(characterplace, 'BAR') -> 2;
 enum_to_int(characterplace, 'BATTLE_TEAM') -> 1;
 enum_to_int(characterplace, 'BACKUP_TEAM') -> 0;
+enum_to_int(errorcode, 'SYSTEM_ERROR') -> 999;
+enum_to_int(errorcode, 'META_VERSION_MISMATCH') -> 82;
+enum_to_int(errorcode, 'CLIENT_VERSION_MISMATCH') -> 81;
+enum_to_int(errorcode, 'INVALID_PARAMETER') -> 8;
+enum_to_int(errorcode, 'NO_SUCH_ACCOUNT') -> 7;
+enum_to_int(errorcode, 'DUPLICATE_NAME') -> 1;
 enum_to_int(errorcode, 'SUCCESS') -> 0.
 
 int_to_enum(itemtype, 3) -> 'FORMULA';
@@ -660,6 +685,12 @@ int_to_enum(itemtype, 0) -> 'EMPTY';
 int_to_enum(characterplace, 2) -> 'BAR';
 int_to_enum(characterplace, 1) -> 'BATTLE_TEAM';
 int_to_enum(characterplace, 0) -> 'BACKUP_TEAM';
+int_to_enum(errorcode, 999) -> 'SYSTEM_ERROR';
+int_to_enum(errorcode, 82) -> 'META_VERSION_MISMATCH';
+int_to_enum(errorcode, 81) -> 'CLIENT_VERSION_MISMATCH';
+int_to_enum(errorcode, 8) -> 'INVALID_PARAMETER';
+int_to_enum(errorcode, 7) -> 'NO_SUCH_ACCOUNT';
+int_to_enum(errorcode, 1) -> 'DUPLICATE_NAME';
 int_to_enum(errorcode, 0) -> 'SUCCESS';
 int_to_enum(_, Val) -> Val.
 
@@ -714,11 +745,17 @@ decode_geminfo(Bytes) when is_binary(Bytes) ->
 decode_equipment(Bytes) when is_binary(Bytes) ->
     decode(equipment, Bytes).
 
+decode_errormessage(Bytes) when is_binary(Bytes) ->
+    decode(errormessage, Bytes).
+
 decode_transunit(Bytes) when is_binary(Bytes) ->
     decode(transunit, Bytes).
 
 delimited_decode_transunit(Bytes) ->
     delimited_decode(transunit, Bytes).
+
+delimited_decode_errormessage(Bytes) ->
+    delimited_decode(errormessage, Bytes).
 
 delimited_decode_equipment(Bytes) ->
     delimited_decode(equipment, Bytes).
@@ -796,6 +833,11 @@ decode(transunit, Bytes) when is_binary(Bytes) ->
 		    [], [], []}}}}],
     Decoded = decode(Bytes, Types, Defaults),
     to_record(transunit, Decoded);
+decode(errormessage, Bytes) when is_binary(Bytes) ->
+    Types = [{1, error, errorcode, []}],
+    Defaults = [],
+    Decoded = decode(Bytes, Types, Defaults),
+    to_record(errormessage, Decoded);
 decode(equipment, Bytes) when is_binary(Bytes) ->
     Types = [{4, geminfo, geminfo, [is_record, repeated]},
 	     {3, strengthen, int32, []}, {2, metaid, int32, []},
@@ -1024,6 +1066,15 @@ to_record(transunit, DecodedTuples) ->
 			  end,
 			  #transunit{}, DecodedTuples),
     decode_extensions(Record1);
+to_record(errormessage, DecodedTuples) ->
+    Record1 = lists:foldr(fun ({_FNum, Name, Val},
+			       Record) ->
+				  set_record_field(record_info(fields,
+							       errormessage),
+						   Record, Name, Val)
+			  end,
+			  #errormessage{}, DecodedTuples),
+    Record1;
 to_record(equipment, DecodedTuples) ->
     Record1 = lists:foldr(fun ({_FNum, Name, Val},
 			       Record) ->
@@ -1168,8 +1219,8 @@ to_record(avatarentervisionmessage, DecodedTuples) ->
 decode_extensions(#transunit{'$extensions' =
 				 Extensions} =
 		      Record) ->
-    Types = [{1015, mapInitMessage, mapinitmessage,
-	      [is_record]},
+    Types = [{9999, msg, errormessage, [is_record]},
+	     {1015, mapInitMessage, mapinitmessage, [is_record]},
 	     {1005, avatarEnterVisionMessage,
 	      avatarentervisionmessage, [is_record]},
 	     {1003, createAvatarRequest, createavatarrequest,
@@ -1179,7 +1230,8 @@ decode_extensions(#transunit{'$extensions' =
 	     {1000, accountInfo, accountinfo, [is_record]},
 	     {1, sn, int32, []}, {1, sn, int32, []},
 	     {1, sn, int32, []}, {1, sn, int32, []},
-	     {1, sn, int32, []}, {1, sn, int32, []}],
+	     {1, sn, int32, []}, {1, sn, int32, []},
+	     {1, sn, int32, []}],
     NewExtensions = decode_extensions(Types,
 				      dict:to_list(Extensions), []),
     Record#transunit{'$extensions' = NewExtensions};
@@ -1258,6 +1310,18 @@ extension_size(#transunit{'$extensions' =
     dict:size(Extensions);
 extension_size(_) -> 0.
 
+has_extension(#transunit{'$extensions' = Extensions},
+	      1) ->
+    dict:is_key(1, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      sn) ->
+    dict:is_key(sn, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      9999) ->
+    dict:is_key(9999, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      msg) ->
+    dict:is_key(msg, Extensions);
 has_extension(#transunit{'$extensions' = Extensions},
 	      1) ->
     dict:is_key(1, Extensions);
@@ -1368,6 +1432,12 @@ get_extension(Record, createavatarrequest)
 get_extension(Record, sn)
     when is_record(Record, transunit) ->
     get_extension(Record, 1);
+get_extension(Record, msg)
+    when is_record(Record, transunit) ->
+    get_extension(Record, 9999);
+get_extension(Record, sn)
+    when is_record(Record, transunit) ->
+    get_extension(Record, 1);
 get_extension(#transunit{'$extensions' = Extensions},
 	      Int)
     when is_integer(Int) ->
@@ -1378,6 +1448,18 @@ get_extension(#transunit{'$extensions' = Extensions},
     end;
 get_extension(_Record, _FieldName) -> undefined.
 
+set_extension(#transunit{'$extensions' = Extensions} =
+		  Record,
+	      sn, Value) ->
+    NewExtends = dict:store(1,
+			    {required, Value, int32, none}, Extensions),
+    {ok, Record#transunit{'$extensions' = NewExtends}};
+set_extension(#transunit{'$extensions' = Extensions} =
+		  Record,
+	      msg, Value) ->
+    NewExtends = dict:store(9999,
+			    {optional, Value, errormessage, none}, Extensions),
+    {ok, Record#transunit{'$extensions' = NewExtends}};
 set_extension(#transunit{'$extensions' = Extensions} =
 		  Record,
 	      sn, Value) ->

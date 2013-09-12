@@ -34,28 +34,11 @@ create_robot(RobotId) ->
 %%   ServerAddr = "tcp://10.10.9.116:5570",
 %%   ServerAddr = "tcp://127.0.0.1:5570",
   ok = erlzmq:connect(Socket, ServerAddr),
-%%   TransUnit = login_req(),
-  TransUnit = create_account_req(RobotId),
+  TransUnit = rpc_req:login_req(RobotId),
+%%   TransUnit = rpc_req:create_account_req(RobotId),
   send(Socket, TransUnit),
   close(Socket),
   terminate(Context).
-
-create_account_req(RobotId) ->
-  Id = integer_to_list(RobotId),
-  DeviceId = "Erobot" ++ Id,
-  Name = "Robot" ++ Id,
-  Message = #createavatarrequest{device_id = DeviceId, name = Name, meta_id = 131011},
-  wrap_transunit(createavatarrequest, Message).
-
-login_req(RobotId) ->
-  Id = integer_to_list(RobotId),
-  DeviceId = "Erobot" ++ Id,
-  Message = #loginrequest{device_id = DeviceId, client_version = "0.5.0", meta_crc32 = "8414FF96"},
-  wrap_transunit(loginrequest, Message).
-
-wrap_transunit(Type, Message) when is_atom(Type) ->
-  {ok, TransUnit} = rpc_pb:set_extension(#transunit{sn = 1, '$extensions' = dict:new()}, Type, Message),
-  TransUnit.
 
 send(Socket, TransUnit) ->
   Bin = list_to_binary(rpc_pb:encode_transunit(TransUnit)),
@@ -70,7 +53,13 @@ loop(Socket, N) when N > 0 ->
       loop(Socket, N - 1);
     {ok, ReplyBin} ->
       TransUnit = rpc_pb:decode_transunit(ReplyBin),
-      lager:info("ReplyMsg = ~w~n", [TransUnit]),
+      case rpc_pb:get_extension(TransUnit, loginreply) of
+        {ok, LoginReply} ->
+          Id = (LoginReply#loginreply.accountinfo)#accountinfo.id,
+          lager:info("Robot ~p loged in.~n", [Id]);
+        undefined ->
+          lager:info("Robot FAILED to login: ~p~n", [TransUnit])
+      end,
       loop(Socket, N)
   end.
 

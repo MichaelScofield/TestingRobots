@@ -6,6 +6,13 @@
 }).
 -endif.
 
+-ifndef(ERRORMESSAGE_PB_H).
+-define(ERRORMESSAGE_PB_H, true).
+-record(errormessage, {
+    error = erlang:error({required, error})
+}).
+-endif.
+
 -ifndef(EQUIPMENT_PB_H).
 -define(EQUIPMENT_PB_H, true).
 -record(equipment, {

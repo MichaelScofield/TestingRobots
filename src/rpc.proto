@@ -3,8 +3,22 @@ message TransUnit {
     extensions 100 to max;
 }
 
+message ErrorMessage {
+    required ErrorCode error = 1;
+}
+
+extend TransUnit {
+    optional ErrorMessage msg = 9999;
+}
+
 enum ErrorCode {
     SUCCESS = 0;
+    DUPLICATE_NAME = 1;
+    NO_SUCH_ACCOUNT = 7;
+    INVALID_PARAMETER = 8;
+    CLIENT_VERSION_MISMATCH = 81;
+    META_VERSION_MISMATCH = 82;
+    SYSTEM_ERROR = 999;
 }
 
 enum CharacterPlace {
