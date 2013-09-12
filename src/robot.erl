@@ -27,55 +27,25 @@ init(RobotStartId, RobotCount, N) ->
 
 create_robot(RobotId) ->
   lager:info("create robot id = " ++ integer_to_list(RobotId)),
-  {ok, Context} = erlzmq:context(),
-  {ok, Socket} = erlzmq:socket(Context, dealer),
-  ok = erlzmq:setsockopt(Socket, identity, pid_to_list(self())),
-  ServerAddr = "tcp://10.10.10.10:5570",
-%%   ServerAddr = "tcp://10.10.9.116:5570",
-%%   ServerAddr = "tcp://127.0.0.1:5570",
-  ok = erlzmq:connect(Socket, ServerAddr),
+  MessageDealer = list_to_atom("robot_md" ++ integer_to_list(RobotId)),
+  true = register(MessageDealer, spawn_link(message_dealer, start, [RobotId, self()])),
+  Heartbeat = list_to_atom("robot_hb" ++ integer_to_list(RobotId)),
+  true = register(Heartbeat, spawn_link(heartbeat, start, [RobotId, MessageDealer])),
   TransUnit = rpc_req:login_req(RobotId),
 %%   TransUnit = rpc_req:create_account_req(RobotId),
-  send(Socket, TransUnit),
-  close(Socket),
-  terminate(Context).
-
-send(Socket, TransUnit) ->
-  Bin = list_to_binary(rpc_pb:encode_transunit(TransUnit)),
-  erlzmq:send(Socket, Bin),
-  loop(Socket, 3).
-
-loop(_Socket, 0) ->
-  over;
-loop(Socket, N) when N > 0 ->
-  case polling(Socket, 100, 10) of
-    {error, timeout} ->
-      loop(Socket, N - 1);
-    {ok, ReplyBin} ->
-      TransUnit = rpc_pb:decode_transunit(ReplyBin),
-      case rpc_pb:get_extension(TransUnit, loginreply) of
+  MessageDealer ! {send, TransUnit},
+  receive
+    {received, ReplyBin} ->
+      ReplyMsg = rpc_pb:decode_transunit(ReplyBin),
+      case rpc_pb:get_extension(ReplyMsg, loginreply) of
         {ok, LoginReply} ->
           Id = (LoginReply#loginreply.accountinfo)#accountinfo.id,
           lager:info("Robot ~p loged in.~n", [Id]);
         undefined ->
-          lager:info("Robot FAILED to login: ~p~n", [TransUnit])
-      end,
-      loop(Socket, N)
-  end.
-
-polling(_Socket, 0, _Delay) ->
-  {error, timeout};
-polling(Socket, N, Delay) when N > 0 ->
-  case erlzmq:recv(Socket, [dontwait]) of
-    {ok, Msg} ->
-      {ok, Msg};
-    {error, eagain} ->
-      timer:sleep(Delay),
-      polling(Socket, N - 1, Delay)
-  end.
-
-close(Socket) ->
-  erlzmq:close(Socket).
-
-terminate(Context) ->
-  erlzmq:term(Context).
+          lager:info("Robot FAILED to login: ~p~n", [ReplyMsg])
+      end
+  after 60000 ->
+    lager:error("robot ~p receiving timeout", [RobotId])
+  end,
+  Heartbeat ! stop,
+  MessageDealer ! stop.

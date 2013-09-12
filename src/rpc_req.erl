@@ -5,7 +5,15 @@
 -include("rpc_pb.hrl").
 
 %% API
--export([create_account_req/1, login_req/1]).
+-export([create_account_req/1, login_req/1, ping/0, move/3]).
+
+ping() ->
+  Message = #pingmessage{},
+  wrap_transunit(Message).
+
+move(X, Y, AccountId) ->
+  Message = #avatarmovemessage{grid_x = X, grid_y = Y, account_id = AccountId},
+  wrap_transunit(Message).
 
 create_account_req(RobotId) ->
   Id = integer_to_list(RobotId),

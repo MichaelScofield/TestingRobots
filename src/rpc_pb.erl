@@ -2,7 +2,12 @@
 
 -module(rpc_pb).
 
--export([encode_avatarentervisionmessage/1,
+-export([encode_avatarmovemessage/1,
+	 decode_avatarmovemessage/1,
+	 delimited_decode_avatarmovemessage/1,
+	 encode_pingmessage/1, decode_pingmessage/1,
+	 delimited_decode_pingmessage/1,
+	 encode_avatarentervisionmessage/1,
 	 decode_avatarentervisionmessage/1,
 	 delimited_decode_avatarentervisionmessage/1,
 	 encode_mapinitmessage/1, decode_mapinitmessage/1,
@@ -41,6 +46,11 @@
 -export([decode_extensions/1]).
 
 -export([encode/1, decode/2, delimited_decode/2]).
+
+-record(avatarmovemessage,
+	{grid_x, grid_y, account_id}).
+
+-record(pingmessage, {}).
 
 -record(avatarentervisionmessage,
 	{account_id, character_info, grid_x, grid_y}).
@@ -102,6 +112,19 @@ encode([]) -> [];
 encode(Records) when is_list(Records) ->
     delimited_encode(Records);
 encode(Record) -> encode(element(1, Record), Record).
+
+encode_avatarmovemessage(Records)
+    when is_list(Records) ->
+    delimited_encode(Records);
+encode_avatarmovemessage(Record)
+    when is_record(Record, avatarmovemessage) ->
+    encode(avatarmovemessage, Record).
+
+encode_pingmessage(Records) when is_list(Records) ->
+    delimited_encode(Records);
+encode_pingmessage(Record)
+    when is_record(Record, pingmessage) ->
+    encode(pingmessage, Record).
 
 encode_avatarentervisionmessage(Records)
     when is_list(Records) ->
@@ -298,6 +321,17 @@ encode(avatarentervisionmessage, Records)
     delimited_encode(Records);
 encode(avatarentervisionmessage, Record) ->
     [iolist(avatarentervisionmessage, Record)
+     | encode_extensions(Record)];
+encode(pingmessage, Records) when is_list(Records) ->
+    delimited_encode(Records);
+encode(pingmessage, Record) ->
+    [iolist(pingmessage, Record)
+     | encode_extensions(Record)];
+encode(avatarmovemessage, Records)
+    when is_list(Records) ->
+    delimited_encode(Records);
+encode(avatarmovemessage, Record) ->
+    [iolist(avatarmovemessage, Record)
      | encode_extensions(Record)].
 
 encode_extensions(#transunit{'$extensions' =
@@ -622,7 +656,18 @@ iolist(avatarentervisionmessage, Record) ->
      pack(4, required,
 	  with_default(Record#avatarentervisionmessage.grid_y,
 		       none),
-	  int32, [])].
+	  int32, [])];
+iolist(pingmessage, _Record) -> [];
+iolist(avatarmovemessage, Record) ->
+    [pack(1, required,
+	  with_default(Record#avatarmovemessage.grid_x, none),
+	  int32, []),
+     pack(2, required,
+	  with_default(Record#avatarmovemessage.grid_y, none),
+	  int32, []),
+     pack(3, required,
+	  with_default(Record#avatarmovemessage.account_id, none),
+	  int64, [])].
 
 with_default(Default, Default) -> undefined;
 with_default(Val, _) -> Val.
@@ -693,6 +738,12 @@ int_to_enum(errorcode, 7) -> 'NO_SUCH_ACCOUNT';
 int_to_enum(errorcode, 1) -> 'DUPLICATE_NAME';
 int_to_enum(errorcode, 0) -> 'SUCCESS';
 int_to_enum(_, Val) -> Val.
+
+decode_avatarmovemessage(Bytes) when is_binary(Bytes) ->
+    decode(avatarmovemessage, Bytes).
+
+decode_pingmessage(Bytes) when is_binary(Bytes) ->
+    decode(pingmessage, Bytes).
 
 decode_avatarentervisionmessage(Bytes)
     when is_binary(Bytes) ->
@@ -804,6 +855,12 @@ delimited_decode_mapinitmessage(Bytes) ->
 
 delimited_decode_avatarentervisionmessage(Bytes) ->
     delimited_decode(avatarentervisionmessage, Bytes).
+
+delimited_decode_pingmessage(Bytes) ->
+    delimited_decode(pingmessage, Bytes).
+
+delimited_decode_avatarmovemessage(Bytes) ->
+    delimited_decode(avatarmovemessage, Bytes).
 
 delimited_decode(Type, Bytes) when is_binary(Bytes) ->
     delimited_decode(Type, Bytes, []).
@@ -982,7 +1039,19 @@ decode(avatarentervisionmessage, Bytes)
 	     {1, account_id, int64, []}],
     Defaults = [],
     Decoded = decode(Bytes, Types, Defaults),
-    to_record(avatarentervisionmessage, Decoded).
+    to_record(avatarentervisionmessage, Decoded);
+decode(pingmessage, Bytes) when is_binary(Bytes) ->
+    Types = [],
+    Defaults = [],
+    Decoded = decode(Bytes, Types, Defaults),
+    to_record(pingmessage, Decoded);
+decode(avatarmovemessage, Bytes)
+    when is_binary(Bytes) ->
+    Types = [{3, account_id, int64, []},
+	     {2, grid_y, int32, []}, {1, grid_x, int32, []}],
+    Defaults = [],
+    Decoded = decode(Bytes, Types, Defaults),
+    to_record(avatarmovemessage, Decoded).
 
 decode(<<>>, Types, Acc) ->
     reverse_repeated_fields(Acc, Types);
@@ -1214,20 +1283,42 @@ to_record(avatarentervisionmessage, DecodedTuples) ->
 						   Record, Name, Val)
 			  end,
 			  #avatarentervisionmessage{}, DecodedTuples),
+    Record1;
+to_record(pingmessage, DecodedTuples) ->
+    Record1 = lists:foldr(fun ({_FNum, Name, Val},
+			       Record) ->
+				  set_record_field(record_info(fields,
+							       pingmessage),
+						   Record, Name, Val)
+			  end,
+			  #pingmessage{}, DecodedTuples),
+    Record1;
+to_record(avatarmovemessage, DecodedTuples) ->
+    Record1 = lists:foldr(fun ({_FNum, Name, Val},
+			       Record) ->
+				  set_record_field(record_info(fields,
+							       avatarmovemessage),
+						   Record, Name, Val)
+			  end,
+			  #avatarmovemessage{}, DecodedTuples),
     Record1.
 
 decode_extensions(#transunit{'$extensions' =
 				 Extensions} =
 		      Record) ->
     Types = [{9999, msg, errormessage, [is_record]},
+	     {9998, pingmessage, pingmessage, [is_record]},
 	     {1015, mapInitMessage, mapinitmessage, [is_record]},
 	     {1005, avatarEnterVisionMessage,
 	      avatarentervisionmessage, [is_record]},
+	     {1004, avatarmovemessage, avatarmovemessage,
+	      [is_record]},
 	     {1003, createAvatarRequest, createavatarrequest,
 	      [is_record]},
 	     {1002, loginReply, loginreply, [is_record]},
 	     {1001, loginRequest, loginrequest, [is_record]},
 	     {1000, accountInfo, accountinfo, [is_record]},
+	     {1, sn, int32, []}, {1, sn, int32, []},
 	     {1, sn, int32, []}, {1, sn, int32, []},
 	     {1, sn, int32, []}, {1, sn, int32, []},
 	     {1, sn, int32, []}, {1, sn, int32, []},
@@ -1394,8 +1485,44 @@ has_extension(#transunit{'$extensions' = Extensions},
 has_extension(#transunit{'$extensions' = Extensions},
 	      avatarentervisionmessage) ->
     dict:is_key(avatarentervisionmessage, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      1) ->
+    dict:is_key(1, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      sn) ->
+    dict:is_key(sn, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      9998) ->
+    dict:is_key(9998, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      pingmessage) ->
+    dict:is_key(pingmessage, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      1) ->
+    dict:is_key(1, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      sn) ->
+    dict:is_key(sn, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      1004) ->
+    dict:is_key(1004, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      avatarmovemessage) ->
+    dict:is_key(avatarmovemessage, Extensions);
 has_extension(_Record, _FieldName) -> false.
 
+get_extension(Record, avatarmovemessage)
+    when is_record(Record, transunit) ->
+    get_extension(Record, 1004);
+get_extension(Record, sn)
+    when is_record(Record, transunit) ->
+    get_extension(Record, 1);
+get_extension(Record, pingmessage)
+    when is_record(Record, transunit) ->
+    get_extension(Record, 9998);
+get_extension(Record, sn)
+    when is_record(Record, transunit) ->
+    get_extension(Record, 1);
 get_extension(Record, avatarentervisionmessage)
     when is_record(Record, transunit) ->
     get_extension(Record, 1005);
@@ -1533,6 +1660,31 @@ set_extension(#transunit{'$extensions' = Extensions} =
 	      avatarentervisionmessage, Value) ->
     NewExtends = dict:store(1005,
 			    {optional, Value, avatarentervisionmessage, none},
+			    Extensions),
+    {ok, Record#transunit{'$extensions' = NewExtends}};
+set_extension(#transunit{'$extensions' = Extensions} =
+		  Record,
+	      sn, Value) ->
+    NewExtends = dict:store(1,
+			    {required, Value, int32, none}, Extensions),
+    {ok, Record#transunit{'$extensions' = NewExtends}};
+set_extension(#transunit{'$extensions' = Extensions} =
+		  Record,
+	      pingmessage, Value) ->
+    NewExtends = dict:store(9998,
+			    {optional, Value, pingmessage, none}, Extensions),
+    {ok, Record#transunit{'$extensions' = NewExtends}};
+set_extension(#transunit{'$extensions' = Extensions} =
+		  Record,
+	      sn, Value) ->
+    NewExtends = dict:store(1,
+			    {required, Value, int32, none}, Extensions),
+    {ok, Record#transunit{'$extensions' = NewExtends}};
+set_extension(#transunit{'$extensions' = Extensions} =
+		  Record,
+	      avatarmovemessage, Value) ->
+    NewExtends = dict:store(1004,
+			    {optional, Value, avatarmovemessage, none},
 			    Extensions),
     {ok, Record#transunit{'$extensions' = NewExtends}};
 set_extension(Record, _, _) -> {error, Record}.

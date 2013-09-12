@@ -200,3 +200,21 @@ message AvatarEnterVisionMessage {
 extend TransUnit {
     optional AvatarEnterVisionMessage avatarEnterVisionMessage = 1005;
 }
+
+message PingMessage {
+
+}
+
+extend TransUnit {
+    optional PingMessage pingmessage = 9998;
+}
+
+message AvatarMoveMessage {
+    required int32 grid_x = 1;
+    required int32 grid_y = 2;
+    required int64 account_id = 3;
+}
+
+extend TransUnit {
+    optional AvatarMoveMessage avatarmovemessage = 1004;
+}

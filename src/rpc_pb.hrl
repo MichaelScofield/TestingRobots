@@ -204,3 +204,19 @@
 }).
 -endif.
 
+-ifndef(PINGMESSAGE_PB_H).
+-define(PINGMESSAGE_PB_H, true).
+-record(pingmessage, {
+    
+}).
+-endif.
+
+-ifndef(AVATARMOVEMESSAGE_PB_H).
+-define(AVATARMOVEMESSAGE_PB_H, true).
+-record(avatarmovemessage, {
+    grid_x = erlang:error({required, grid_x}),
+    grid_y = erlang:error({required, grid_y}),
+    account_id = erlang:error({required, account_id})
+}).
+-endif.
+
