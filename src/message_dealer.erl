@@ -12,9 +12,9 @@ start(RobotId, Receiver) ->
   {ok, Context} = erlzmq:context(),
   {ok, Socket} = erlzmq:socket(Context, dealer),
   ok = erlzmq:setsockopt(Socket, identity, pid_to_list(self())),
-  ServerAddr = "tcp://10.10.10.10:5570",
+%%   ServerAddr = "tcp://10.10.10.10:5570",
 %%   ServerAddr = "tcp://10.10.9.116:5570",
-%%   ServerAddr = "tcp://127.0.0.1:5570",
+  ServerAddr = "tcp://127.0.0.1:5570",
   ok = erlzmq:connect(Socket, ServerAddr),
   loop(RobotId, Receiver, Socket, Context).
 
