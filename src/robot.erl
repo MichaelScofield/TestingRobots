@@ -44,10 +44,13 @@ create_robot(RobotId) ->
   StateData = {RobotId, MessageDealer, RobotState},
   gen_fsm:start_link({local, RobotFSM}, robot, StateData, []),
 
-  loop(RobotFSM, RobotId, MessageDealer, none),
+  loop(RobotFSM, RobotId, MessageDealer, RobotTimer),
 
+  lager:info("[RobotTimer ~p] pid = ~p, stop~n", [RobotTimer, whereis(RobotTimer)]),
   RobotTimer ! stop,
+  lager:info("[HeartBeat ~p] pid = ~p, stop~n", [Heartbeat, whereis(Heartbeat)]),
   Heartbeat ! stop,
+  lager:info("[MessageDealer ~p] pid = ~p, stop~n", [MessageDealer, whereis(MessageDealer)]),
   MessageDealer ! stop.
 
 loop(RobotFSM, RobotId, MessageDealer, RobotTimer) ->
@@ -75,12 +78,12 @@ loop(RobotFSM, RobotId, MessageDealer, RobotTimer) ->
           end;
         undefined ->
           lager:warning("[Robot ~p] Discard unknown reply: ~p~n", [RobotId, ReplyMsg])
-      end
+      end,
+      loop(RobotFSM, RobotId, MessageDealer, RobotTimer)
   after 120000 ->
     lager:error("[Robot ~p] Receiving timeout", [RobotId]),
     gen_fsm:send_all_state_event(RobotFSM, stop)
-  end,
-  loop(RobotFSM, RobotId, MessageDealer, RobotTimer).
+  end.
 
 init(RobotState) ->
   RobotId = element(1, RobotState),
