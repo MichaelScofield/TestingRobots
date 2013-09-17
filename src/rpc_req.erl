@@ -29,5 +29,7 @@ login_req(RobotId) ->
   wrap_transunit(Message).
 
 wrap_transunit(Message) ->
-  {ok, TransUnit} = rpc_pb:set_extension(#transunit{sn = 1, '$extensions' = dict:new()}, element(1, Message), Message),
+  {_, Second, MicroSec} = now(),
+  Sn = (Second - Second div 10000 * 10000) * 1000 + (MicroSec - MicroSec div 1000 * 1000),
+  {ok, TransUnit} = rpc_pb:set_extension(#transunit{sn = Sn, '$extensions' = dict:new()}, element(1, Message), Message),
   TransUnit.
