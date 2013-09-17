@@ -1306,7 +1306,8 @@ to_record(avatarmovemessage, DecodedTuples) ->
 decode_extensions(#transunit{'$extensions' =
 				 Extensions} =
 		      Record) ->
-    Types = [{9999, msg, errormessage, [is_record]},
+    Types = [{9999, errormessage, errormessage,
+	      [is_record]},
 	     {9998, pingmessage, pingmessage, [is_record]},
 	     {1015, mapInitMessage, mapinitmessage, [is_record]},
 	     {1005, avatarEnterVisionMessage,
@@ -1411,8 +1412,8 @@ has_extension(#transunit{'$extensions' = Extensions},
 	      9999) ->
     dict:is_key(9999, Extensions);
 has_extension(#transunit{'$extensions' = Extensions},
-	      msg) ->
-    dict:is_key(msg, Extensions);
+	      errormessage) ->
+    dict:is_key(errormessage, Extensions);
 has_extension(#transunit{'$extensions' = Extensions},
 	      1) ->
     dict:is_key(1, Extensions);
@@ -1559,7 +1560,7 @@ get_extension(Record, createavatarrequest)
 get_extension(Record, sn)
     when is_record(Record, transunit) ->
     get_extension(Record, 1);
-get_extension(Record, msg)
+get_extension(Record, errormessage)
     when is_record(Record, transunit) ->
     get_extension(Record, 9999);
 get_extension(Record, sn)
@@ -1583,7 +1584,7 @@ set_extension(#transunit{'$extensions' = Extensions} =
     {ok, Record#transunit{'$extensions' = NewExtends}};
 set_extension(#transunit{'$extensions' = Extensions} =
 		  Record,
-	      msg, Value) ->
+	      errormessage, Value) ->
     NewExtends = dict:store(9999,
 			    {optional, Value, errormessage, none}, Extensions),
     {ok, Record#transunit{'$extensions' = NewExtends}};

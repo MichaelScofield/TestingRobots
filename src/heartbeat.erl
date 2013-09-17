@@ -4,8 +4,6 @@
 
 -compile([{parse_transform, lager_transform}]).
 
--include("rpc_pb.hrl").
-
 %% API
 -export([start/2]).
 
@@ -15,10 +13,11 @@ start(RobotId, MessageDealer) ->
 
 pow(RobotId, MessageDealer) ->
   MessageDealer ! {send, rpc_req:ping()},
+  lager:info("[Robot ~p] Send req: Ping.~n", [RobotId]),
   receive
     stop ->
       lager:warning("stop heartbeat ~p~n", [RobotId]),
       stop
-  after 300000 ->
+  after 30000 ->
     pow(RobotId, MessageDealer)
   end.
