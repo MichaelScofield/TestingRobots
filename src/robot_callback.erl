@@ -2,6 +2,8 @@
 -module(robot_callback).
 -author("lfc").
 
+-compile([{parse_transform, lager_transform}]).
+
 -include("rpc_pb.hrl").
 
 %% API

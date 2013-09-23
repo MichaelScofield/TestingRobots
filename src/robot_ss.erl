@@ -2,6 +2,8 @@
 -module(robot_ss).
 -author("lfc").
 
+-compile([{parse_transform, lager_transform}]).
+
 -behaviour(supervisor).
 
 %% API
@@ -23,7 +25,7 @@ start_link(RobotStartId, RobotCount)
 init({RobotStartId, RobotCount}) ->
   SupervisorSpec = {one_for_one, 1, 60},
   ChildrenSpec = [?CHILD_SPEC(Name, RobotId) || {Name, RobotId} <- generate_child_spec(RobotStartId, RobotCount)],
-  {ok, SupervisorSpec, ChildrenSpec}.
+  {ok, {SupervisorSpec, ChildrenSpec}}.
 
 generate_child_spec(RobotStartId, RobotCount) ->
   generate_child_spec(RobotStartId, RobotCount, 0, []).

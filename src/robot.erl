@@ -4,12 +4,18 @@
 
 -compile([{parse_transform, lager_transform}]).
 
--include("rpc_pb.hrl").
-
 -behaviour(gen_fsm).
+
+%% API
+-export([start_link/1]).
 
 %% gen_fsm callback
 -export([init/1, logining/2, handle_event/3, handle_sync_event/4, handle_info/3, terminate/3, code_change/4]).
+
+start_link(RobotId) ->
+  RobotFSMId = list_to_atom("robot-fsm-" ++ integer_to_list(RobotId)),
+  lager:info("[Robot ~p] start robot FSM ~p~n", [RobotId, RobotFSMId]),
+  gen_fsm:start_link({local, RobotFSMId}, robot, RobotId, []).
 
 init(RobotId) ->
   lager:info("create robot id = " ++ integer_to_list(RobotId)),
