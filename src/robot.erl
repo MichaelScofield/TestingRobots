@@ -10,7 +10,7 @@
 -export([start_link/1]).
 
 %% gen_fsm callback
--export([init/1, logining/2, handle_event/3, handle_sync_event/4, handle_info/3, terminate/3, code_change/4]).
+-export([init/1, logining/2, prepare/2, handle_event/3, handle_sync_event/4, handle_info/3, terminate/3, code_change/4]).
 
 start_link(RobotId) ->
   RobotFSMId = list_to_atom("robot-fsm-" ++ integer_to_list(RobotId)),
@@ -18,6 +18,9 @@ start_link(RobotId) ->
   gen_fsm:start_link({local, RobotFSMId}, robot, RobotId, []).
 
 init(RobotId) ->
+  {ok, prepare, RobotId}.
+
+prepare(res, RobotId) ->
   lager:info("create robot id = " ++ integer_to_list(RobotId)),
 
   SupervisorId = list_to_atom("robot-supervisor-" ++ integer_to_list(RobotId)),
@@ -39,7 +42,7 @@ init(RobotId) ->
   lager:info("[Robot ~p] Send req: Login.~n", [RobotId]),
 
   StateData = {RobotId, MessageDealer, {[], [logining]}},
-  {ok, logining, StateData}.
+  {next_state, logining, StateData}.
 
 logining({EventId, EventDetail, EventContent}, {RobotId, MessageDealer, {SoFar, [Next | Remaining]}}) ->
   case EventId of

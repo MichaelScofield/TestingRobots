@@ -5,7 +5,7 @@
 -compile([{parse_transform, lager_transform}]).
 
 %% API
--export([start/2]).
+-export([start/2, loop/4]).
 
 start(RobotId, Receiver) ->
   lager:info("create message dealer id ~p~n", [RobotId]),
@@ -16,7 +16,8 @@ start(RobotId, Receiver) ->
 %%   ServerAddr = "tcp://10.10.9.116:5570",
   ServerAddr = "tcp://127.0.0.1:5570",
   ok = erlzmq:connect(Socket, ServerAddr),
-  loop(RobotId, Receiver, Socket, Context).
+  MessageDealer = list_to_atom("robot-md-" ++ integer_to_list(RobotId)),
+  register(MessageDealer, spawn_link(?MODULE, loop, [RobotId, Receiver, Socket, Context])).
 
 loop(RobotId, Receiver, Socket, Context) ->
   receive

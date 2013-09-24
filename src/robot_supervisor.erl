@@ -15,7 +15,9 @@
 start_link(RobotId) ->
   lager:start(),
   SupervisorId = list_to_atom("robot-supervisor-" ++ integer_to_list(RobotId)),
-  supervisor:start_link({local, SupervisorId}, ?MODULE, RobotId).
+  supervisor:start_link({local, SupervisorId}, ?MODULE, RobotId),
+  RobotFSMId = list_to_atom("robot-fsm-" ++ integer_to_list(RobotId)),
+  gen_fsm:send_event(RobotFSMId, res).
 
 init(RobotId) ->
   SupervisorSpec = {one_for_all, 1, 60},

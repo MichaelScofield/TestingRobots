@@ -7,15 +7,16 @@
 -include("rpc_pb.hrl").
 
 %% API
--export([start/1]).
+-export([start/1, loop/4]).
 
 start(RobotId) ->
   lager:info("create robot callback id = " ++ integer_to_list(RobotId)),
 
-  RobotFSMId = list_to_atom("RobotFSM" ++ integer_to_list(RobotId)),
+  RobotFSMId = list_to_atom("robot-fsm-" ++ integer_to_list(RobotId)),
   MessageDealer = list_to_atom("robot-md-" ++ integer_to_list(RobotId)),
   RobotTimer = list_to_atom("robot-timer-" ++ integer_to_list(RobotId)), % can only be created after robot has logged in
-  loop(RobotFSMId, RobotId, MessageDealer, RobotTimer).
+  ReplyCallback = list_to_atom("robot-cb-" ++ integer_to_list(RobotId)),
+  register(ReplyCallback, spawn_link(?MODULE, loop, [RobotFSMId, RobotId, MessageDealer, RobotTimer])).
 
 loop(RobotFSMId, RobotId, MessageDealer, RobotTimer) ->
   receive
