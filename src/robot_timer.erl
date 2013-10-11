@@ -7,16 +7,20 @@
 %% API
 -export([start/3]).
 
+%% Created in robot_callback:loop/4.
 start(RobotId, AccountId, MessageDealer) ->
   lager:info("create robot timer id ~p~n", [RobotId]),
-  RobotMovingState = {500, 150, AccountId},
-  tick(moving, RobotId, MessageDealer, 30000, RobotMovingState). % 500 and 150 are the initial coordinates of a robot
+  RobotMovingState = {400, 100, AccountId}, % 400 and 100 are the initial coordinates of a robot
+  random:seed(), % Generate default random seed.
+  tick(moving, RobotId, MessageDealer, 10000, RobotMovingState).
 
 tick(moving, RobotId, MessageDealer, Timeout, {X, Y, AccountId}) ->
-  NewX = X + random:uniform(50),
-  NewY = Y + random:uniform(10),
+  {RandomX, _} = random:uniform_s(50, random:seed(now())),
+  NewX = X + RandomX,
+  {RandomY, _} = random:uniform_s(10, random:seed(now())),
+  NewY = Y + RandomY,
   MessageDealer ! {send, rpc_req:move(NewX, NewY, AccountId)},
-  lager:info("[Robot ~p] Send req: Moving to (~p, ~p)~n", [AccountId, X, Y]),
+  lager:info("[Robot ~p] Send req: Moving to (~p, ~p)~n", [RobotId, X, Y]),
   receive
     stop ->
       lager:warning("stop robot timer ~p~n", [RobotId]),
