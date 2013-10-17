@@ -22,6 +22,8 @@ start_link(RobotStartId, RobotCount)
   lager:start(),
   supervisor:start_link({local, robot_super_supervisor}, ?MODULE, {RobotStartId, RobotCount}),
 
+  robots_global:start_link(),
+
   RobotsList = lists:seq(RobotStartId, RobotStartId + RobotCount - 1),
   start_robot(RobotsList).
 

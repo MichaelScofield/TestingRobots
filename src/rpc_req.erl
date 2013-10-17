@@ -19,12 +19,15 @@ create_account_req(RobotId) ->
   Id = integer_to_list(RobotId),
   DeviceId = "Erobot" ++ Id,
   Name = "Robot" ++ Id,
-  Message = #createavatarrequest{device_id = DeviceId, name = Name, meta_id = 131011},
+  CharacterIds = {131012, 131042, 131032},
+  Random = gen_server:call(robots_global, {get, next_random, 3}),
+  CharacterId = element(Random, CharacterIds),
+  Message = #createavatarrequest{device_id = DeviceId, name = Name, meta_id = CharacterId},
   wrap_transunit(Message).
 
 login_req(RobotId) ->
   Id = integer_to_list(RobotId),
-  DeviceId = "Erobot" ++ Id,
+  DeviceId = "!@#-robot-" ++ Id,
   Message = #loginrequest{device_id = DeviceId, client_version = "0.5.0", meta_crc32 = "8414FF96"},
   wrap_transunit(Message).
 
