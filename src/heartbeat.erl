@@ -8,16 +8,17 @@
 -export([start/2, pow/2]).
 
 start(RobotId, MessageDealer) ->
-  lager:info("create heartbeat id ~p~n", [RobotId]),
-  spawn_link(?MODULE, pow, [RobotId, MessageDealer]).
+  Heartbeat = list_to_atom("robot-hb-" ++ integer_to_list(RobotId)),
+  register(Heartbeat, spawn_link(?MODULE, pow, [RobotId, MessageDealer])),
+  lager:info("[Robot-~p] Robot start heartbeating. (~p)~n", [RobotId, Heartbeat]).
 
 pow(RobotId, MessageDealer) ->
   receive
     stop ->
-      lager:warning("stop heartbeat ~p~n", [RobotId]),
+      lager:warning("[Robot-~p] Robot stop heartbeating.~n", [RobotId]),
       stop
   after 30000 ->
     MessageDealer ! {send, rpc_req:ping()},
-    lager:info("[Robot ~p] Send req: Ping.~n", [RobotId]),
+    lager:info("[Robot-~p] Ping.~n", [RobotId]),
     pow(RobotId, MessageDealer)
   end.

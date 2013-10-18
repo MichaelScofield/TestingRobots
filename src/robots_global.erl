@@ -9,13 +9,16 @@
 -module(robots_global).
 -author("lfc").
 
+-compile([{parse_transform, lager_transform}]).
+
 %% API
 -export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -behaviour(gen_server).
 
 start_link() ->
-  gen_server:start_link({local, robots_global}, ?MODULE, [], []).
+  gen_server:start_link({local, robots_global}, ?MODULE, [], []),
+  lager:info("Robots global state server started.").
 
 init(_Args) ->
   random:seed(now()),

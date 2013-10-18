@@ -14,15 +14,13 @@
 
 start_link(RobotId) ->
   RobotFSMId = list_to_atom("robot-fsm-" ++ integer_to_list(RobotId)),
-  lager:info("[Robot ~p] start robot FSM ~p~n", [RobotId, RobotFSMId]),
   gen_fsm:start_link({local, RobotFSMId}, robot, RobotId, []).
 
 init(RobotId) ->
+  lager:info("[Robot-~p] Robot FSM created.~n", [RobotId]),
   {ok, prepare, RobotId}.
 
 prepare(res, RobotId) ->
-  lager:info("create robot id = " ++ integer_to_list(RobotId)),
-
   SupervisorId = list_to_atom("robot-supervisor-" ++ integer_to_list(RobotId)),
 
   ReplyCallback = list_to_atom("robot-cb-" ++ integer_to_list(RobotId)),
@@ -39,7 +37,7 @@ prepare(res, RobotId) ->
 
   TransUnit = rpc_req:login_req(RobotId),
   MessageDealer ! {send, TransUnit},
-  lager:info("[Robot ~p] Send req: Login.~n", [RobotId]),
+  lager:info("[Robot-~p] Trying to login.~n", [RobotId]),
 
   StateData = {RobotId, MessageDealer, {[], [logining]}},
   {next_state, logining, StateData}.
@@ -49,8 +47,8 @@ logining({EventId, EventDetail, EventContent}, {RobotId, MessageDealer, {SoFar, 
     get_reply ->
       case EventDetail of
         logined ->
-          lager:debug("[Robot FSM ~p] So far: ~p; Next: ~p; Remaining: ~p~n", [RobotId, SoFar, Next, Remaining]),
-          lager:debug("[Robot FSM ~p] EventId: ~p; EventDetail: ~p; EventContent: ~p~n", [RobotId, EventId, EventDetail, EventContent]),
+          lager:info("[Robot-~p] So far: ~p; Next: ~p; Remaining: ~p~n", [RobotId, SoFar, Next, Remaining]),
+          lager:info("[Robot-~p] EventId: ~p; EventDetail: ~p; EventContent: ~p~n", [RobotId, EventId, EventDetail, EventContent]),
           {next_state, Next, {RobotId, MessageDealer, {[Next | SoFar], Remaining}}}
       end
   end.
@@ -66,18 +64,22 @@ handle_info(_Info, _StateName, _StateData) ->
 
 terminate(Reason, StateName, StateData) ->
   RobotId = element(1, StateData),
+  SupervisorId = list_to_atom("robot-supervisor-" ++ integer_to_list(RobotId)),
 
   Heartbeat = list_to_atom("robot-hb-" ++ integer_to_list(RobotId)),
-  lager:info("[HeartBeat ~p] pid = ~p, stop~n", [Heartbeat, whereis(Heartbeat)]),
-  Heartbeat ! stop,
+%%   lager:info("[HeartBeat ~p] pid=~p, stopping~n", [Heartbeat, whereis(Heartbeat)]),
+%%   Heartbeat ! stop,
+  supervisor:terminate_child(SupervisorId, Heartbeat),
 
   MessageDealer = list_to_atom("robot-md-" ++ integer_to_list(RobotId)),
-  lager:info("[MessageDealer ~p] pid = ~p, stop~n", [MessageDealer, whereis(MessageDealer)]),
-  MessageDealer ! stop,
+%%   lager:info("[MessageDealer ~p] pid=~p, stopping~n", [MessageDealer, whereis(MessageDealer)]),
+%%   MessageDealer ! stop,
+  supervisor:terminate_child(SupervisorId, MessageDealer),
 
   ReplyCallback = list_to_atom("robot-cb-" ++ integer_to_list(RobotId)),
-  lager:info("[RobotReplyCallback ~p] pid = ~p, stop~n", [ReplyCallback, whereis(ReplyCallback)]),
-  ReplyCallback ! stop,
+%%   lager:info("[RobotCallback ~p] pid=~p, stopping~n", [ReplyCallback, whereis(ReplyCallback)]),
+%%   ReplyCallback ! stop,
+  supervisor:terminate_child(SupervisorId, ReplyCallback),
 
   lager:info("robot fsm terminated, reason: ~p, state: ~p, data: ~p~n", [Reason, StateName, StateData]),
   ok.
