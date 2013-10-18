@@ -9,8 +9,8 @@
 
 start(RobotId, MessageDealer) ->
   Heartbeat = list_to_atom("robot-hb-" ++ integer_to_list(RobotId)),
-  register(Heartbeat, spawn_link(?MODULE, pow, [RobotId, MessageDealer])),
-  lager:info("[Robot-~p] Robot start heartbeating. (~p)~n", [RobotId, Heartbeat]).
+  lager:info("[Robot-~p] Robot start heartbeating. (~p)~n", [RobotId, Heartbeat]),
+  pow(RobotId, MessageDealer).
 
 pow(RobotId, MessageDealer) ->
   receive

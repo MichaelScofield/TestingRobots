@@ -16,8 +16,8 @@ start(RobotId, Receiver) ->
   ServerAddr = "tcp://127.0.0.1:5570",
   ok = erlzmq:connect(Socket, ServerAddr),
   MessageDealer = list_to_atom("robot-md-" ++ integer_to_list(RobotId)),
-  register(MessageDealer, spawn_link(?MODULE, loop, [RobotId, Receiver, Socket, Context])),
-  lager:info("[Robot-~p] Robot start dealing with messages. (~p)~n", [RobotId, MessageDealer]).
+  lager:info("[Robot-~p] Robot start dealing with messages. (~p)~n", [RobotId, MessageDealer]),
+  loop(RobotId, Receiver, Socket, Context).
 
 loop(RobotId, Receiver, Socket, Context) ->
   receive

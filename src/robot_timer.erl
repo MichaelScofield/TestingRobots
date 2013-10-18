@@ -10,7 +10,6 @@
 %% Created in robot_callback:loop/4.
 start(RobotId, AccountId, MessageDealer) ->
   RobotMovingState = {1250, 50, AccountId},
-  random:seed(now()), % Generate default random seed.
   Timeout = infinity, %% NOTE one time ticker
 %%   Timeout = 10000,
   lager:info("[Robot-~p] Robot timer created.~n", [RobotId]),

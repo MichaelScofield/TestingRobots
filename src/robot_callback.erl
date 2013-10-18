@@ -14,8 +14,8 @@ start(RobotId) ->
   MessageDealer = list_to_atom("robot-md-" ++ integer_to_list(RobotId)),
   RobotTimer = list_to_atom("robot-timer-" ++ integer_to_list(RobotId)), % can only be created after robot has logged in
   ReplyCallback = list_to_atom("robot-cb-" ++ integer_to_list(RobotId)),
-  register(ReplyCallback, spawn_link(?MODULE, loop, [RobotFSMId, RobotId, MessageDealer, RobotTimer])),
-  lager:info("[Robot-~p] Robot callback created. (~p)~n", [RobotId, ReplyCallback]).
+  lager:info("[Robot-~p] Robot callback created. (~p)~n", [RobotId, ReplyCallback]),
+  loop(RobotFSMId, RobotId, MessageDealer, RobotTimer).
 
 loop(RobotFSMId, RobotId, MessageDealer, RobotTimer) ->
   receive
@@ -42,8 +42,7 @@ loop(RobotFSMId, RobotId, MessageDealer, RobotTimer) ->
           end;
         undefined ->
           lager:warning("[Robot-~p] Discard unknown reply: ~p~n", [RobotId, ReplyMsg])
-      end,
-      loop(RobotFSMId, RobotId, MessageDealer, RobotTimer);
+      end;
     stop ->
       lager:warning("[Robot-~p] Callback received stop message.", [RobotId]),
       RobotTimer ! stop,
@@ -51,4 +50,5 @@ loop(RobotFSMId, RobotId, MessageDealer, RobotTimer) ->
   after 10000 ->
     lager:warning("[Robot-~p] Receiving timeout", [RobotId]),
     gen_fsm:send_all_state_event(RobotFSMId, stop)
-  end.
+  end,
+  loop(RobotFSMId, RobotId, MessageDealer, RobotTimer).

@@ -17,19 +17,27 @@
 -behaviour(gen_server).
 
 start_link() ->
-  gen_server:start_link({local, robots_global}, ?MODULE, [], []),
-  lager:info("Robots global state server started.").
+  gen_server:start_link({local, robots_global}, ?MODULE, [], []).
 
 init(_Args) ->
+  lager:info("Robots global state server started."),
   random:seed(now()),
   State = dict:store(random_seed, random:seed(now()), dict:new()),
   {ok, State}.
 
+handle_call({get, next_random, 0}, _From, State) ->
+  {reply, 0, State};
 handle_call({get, next_random, N}, _From, State) ->
   Seed = dict:fetch(random_seed, State),
   {Random, NextSeed} = random:uniform_s(N, Seed),
   NewState = dict:store(random_seed, NextSeed, State),
-  {reply, Random, NewState}.
+  {reply, Random, NewState};
+
+handle_call({get, Key}, _From, State) ->
+  {reply, dict:fetch(Key, State), State};
+handle_call({set, Key, Value}, _From, State) ->
+  NewState = dict:store(Key, Value, State),
+  {reply, ok, NewState}.
 
 handle_cast(_Request, _State) ->
   erlang:error(not_implemented).
