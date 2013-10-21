@@ -20,7 +20,7 @@ create_account_req(RobotId) ->
   DeviceId = "Erobot" ++ Id,
   Name = "Robot" ++ Id,
   CharacterIds = {131012, 131042, 131032},
-  Random = gen_server:call(robots_global, {get, next_random, 3}),
+  Random = gen_server:call(robot_status, {get, next_random, 3}),
   CharacterId = element(Random, CharacterIds),
   Message = #createavatarrequest{device_id = DeviceId, name = Name, meta_id = CharacterId},
   wrap_transunit(Message).

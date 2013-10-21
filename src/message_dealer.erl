@@ -5,9 +5,9 @@
 -compile([{parse_transform, lager_transform}]).
 
 %% API
--export([start/2, loop/4]).
+-export([start/1, loop/4]).
 
-start(RobotId, Receiver) ->
+start(RobotId) ->
   {ok, Context} = erlzmq:context(),
   {ok, Socket} = erlzmq:socket(Context, dealer),
   ok = erlzmq:setsockopt(Socket, identity, pid_to_list(self())),
@@ -15,9 +15,9 @@ start(RobotId, Receiver) ->
 %%   ServerAddr = "tcp://10.10.9.116:5570",
   ServerAddr = "tcp://127.0.0.1:5570",
   ok = erlzmq:connect(Socket, ServerAddr),
-  MessageDealer = list_to_atom("robot-md-" ++ integer_to_list(RobotId)),
-  lager:info("[Robot-~p] Robot start dealing with messages. (~p)~n", [RobotId, MessageDealer]),
-  loop(RobotId, Receiver, Socket, Context).
+  lager:info("[Robot-~p] Robot start dealing with messages.(~p)~n", [RobotId, self()]),
+  ReplyCallback = list_to_atom("robot-cb-" ++ integer_to_list(RobotId)),
+  loop(RobotId, ReplyCallback, Socket, Context).
 
 loop(RobotId, Receiver, Socket, Context) ->
   receive
@@ -28,17 +28,20 @@ loop(RobotId, Receiver, Socket, Context) ->
       stop;
     {send, TransUnit} ->
       Bin = list_to_binary(rpc_pb:encode_transunit(TransUnit)),
-      erlzmq:send(Socket, Bin)
+      erlzmq:send(Socket, Bin),
+      loop(RobotId, Receiver, Socket, Context)
   after
     100 ->
       case polling(Socket, 100, 10) of
-        {error, _} ->
-          ok;
+        {error, eterm} ->
+          stop;
+        {error, timeout} ->
+          loop(RobotId, Receiver, Socket, Context);
         {ok, Msg} ->
-          Receiver ! {received, Msg}
+          Receiver ! {received, Msg},
+          loop(RobotId, Receiver, Socket, Context)
       end
-  end,
-  loop(RobotId, Receiver, Socket, Context).
+  end.
 
 polling(_Socket, 0, _Delay) ->
   {error, timeout};

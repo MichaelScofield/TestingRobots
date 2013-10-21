@@ -23,10 +23,14 @@ init(ReadyRobotIds) ->
   lager:info("Starting robots scheduler."),
   {ok, {ReadyRobotIds, []}}.
 
-handle_call({start_robot, N}, _From, State) ->
+handle_cast({start_robot, N}, State) ->
   lager:info("Ready to start ~p robots.", [N]),
   {ok, NewState} = start_robot(State, N),
-  {reply, ok, NewState}.
+  {noreply, NewState};
+handle_cast({return_robot, RobotId}, {ReadyRobotIds, RunningRobotIds}) ->
+  lager:info("Stopping robot ~p", [RobotId]),
+  NewRunningRobotIds = lists:delete(RobotId, RunningRobotIds),
+  {noreply, {[RobotId | ReadyRobotIds], NewRunningRobotIds}}.
 
 handle_info({'EXIT', From, Reason}, State) ->
   lager:warning("Robot ~p stopped, reason: ~p~n", [From, Reason]),
@@ -36,20 +40,21 @@ handle_info({'EXIT', From, Reason}, State) ->
 start_robot(State, 0) ->
   {ok, State};
 start_robot({ReadyRobotIds, RunningRobotIds} = State, N) ->
-  Index = gen_server:call(robots_global, {get, next_random, length(ReadyRobotIds)}),
+  Index = gen_server:call(robot_status, {get, next_random, length(ReadyRobotIds)}),
   if
     Index == 0 ->
       lager:warning("No robot can be started."),
       {ok, State};
     true ->
       RobotId = lists:nth(Index, ReadyRobotIds),
-      Pid = spawn(robot, start_link, [RobotId]),
+      Pid = spawn(robot, start, [RobotId]),
+      true = register(list_to_atom(atom_to_list(robot) ++ integer_to_list(RobotId)), Pid),
       lager:info("ReadyRobotIds=~w, starting Robot ~p(~p)~n", [ReadyRobotIds, RobotId, Pid]),
       NewReadyRobotIds = lists:delete(RobotId, ReadyRobotIds),
       start_robot({NewReadyRobotIds, [RobotId | RunningRobotIds]}, N - 1)
   end.
 
-handle_cast(_Request, _State) ->
+handle_call(_Request, _From, _State) ->
   erlang:error(not_implemented).
 
 terminate(Reason, State) ->

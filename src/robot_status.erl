@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 16. Oct 2013 7:30 PM
 %%%-------------------------------------------------------------------
--module(robots_global).
+-module(robot_status).
 -author("lfc").
 
 -compile([{parse_transform, lager_transform}]).
@@ -17,10 +17,10 @@
 -behaviour(gen_server).
 
 start_link() ->
-  gen_server:start_link({local, robots_global}, ?MODULE, [], []).
+  gen_server:start_link({local, robot_status}, ?MODULE, [], []).
 
 init(_Args) ->
-  lager:info("Robots global state server started."),
+  lager:info("Robot status server started."),
   random:seed(now()),
   State = dict:store(random_seed, random:seed(now()), dict:new()),
   {ok, State}.
