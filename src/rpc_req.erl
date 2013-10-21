@@ -27,7 +27,7 @@ create_account_req(RobotId) ->
 
 login_req(RobotId) ->
   Id = integer_to_list(RobotId),
-  DeviceId = "!@#-robot-" ++ Id,
+  DeviceId = "robot-!@#-" ++ Id,
   Message = #loginrequest{device_id = DeviceId, client_version = "0.5.0", meta_crc32 = "8414FF96"},
   wrap_transunit(Message).
 
