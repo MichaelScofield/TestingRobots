@@ -14,6 +14,7 @@ extend TransUnit {
 enum ErrorCode {
     SUCCESS = 0;
     DUPLICATE_NAME = 1;
+    CLIENT_DISCONNECT = 2;
     NO_SUCH_ACCOUNT = 7;
     INVALID_PARAMETER = 8;
     CLIENT_VERSION_MISMATCH = 81;

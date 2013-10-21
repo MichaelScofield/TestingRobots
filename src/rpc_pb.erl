@@ -720,6 +720,7 @@ enum_to_int(errorcode, 'META_VERSION_MISMATCH') -> 82;
 enum_to_int(errorcode, 'CLIENT_VERSION_MISMATCH') -> 81;
 enum_to_int(errorcode, 'INVALID_PARAMETER') -> 8;
 enum_to_int(errorcode, 'NO_SUCH_ACCOUNT') -> 7;
+enum_to_int(errorcode, 'CLIENT_DISCONNECT') -> 2;
 enum_to_int(errorcode, 'DUPLICATE_NAME') -> 1;
 enum_to_int(errorcode, 'SUCCESS') -> 0.
 
@@ -735,6 +736,7 @@ int_to_enum(errorcode, 82) -> 'META_VERSION_MISMATCH';
 int_to_enum(errorcode, 81) -> 'CLIENT_VERSION_MISMATCH';
 int_to_enum(errorcode, 8) -> 'INVALID_PARAMETER';
 int_to_enum(errorcode, 7) -> 'NO_SUCH_ACCOUNT';
+int_to_enum(errorcode, 2) -> 'CLIENT_DISCONNECT';
 int_to_enum(errorcode, 1) -> 'DUPLICATE_NAME';
 int_to_enum(errorcode, 0) -> 'SUCCESS';
 int_to_enum(_, Val) -> Val.
