@@ -12,7 +12,7 @@ start(RobotId, AccountId, MessageDealer) ->
   RobotMovingState = {1250, 50, AccountId},
   Timeout = infinity, %% NOTE one time ticker
 %%   Timeout = 10000,
-  lager:info("[Robot-~p] Robot timer created.~n", [RobotId]),
+  lager:info("[Robot-~p] Timer ticking.~n", [RobotId]),
   tick(moving, RobotId, MessageDealer, Timeout, RobotMovingState).
 
 tick(moving, RobotId, MessageDealer, Timeout, {X, Y, AccountId}) ->
@@ -22,7 +22,7 @@ tick(moving, RobotId, MessageDealer, Timeout, {X, Y, AccountId}) ->
   lager:info("[Robot-~p] Moving to (~p,~p)~n", [RobotId, NewX, NewY]),
   receive
     stop ->
-      lager:warning("[Robot-~p] RobotTimer received stop message.", [RobotId]),
+      lager:warning("[Robot-~p] Timer stop ticking.", [RobotId]),
       stop
   after Timeout ->
     tick(moving, RobotId, MessageDealer, Timeout, {NewX, NewY, AccountId})

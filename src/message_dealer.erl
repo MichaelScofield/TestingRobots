@@ -15,7 +15,7 @@ start(RobotId) ->
 %%   ServerAddr = "tcp://10.10.9.116:5570",
   ServerAddr = "tcp://127.0.0.1:5570",
   ok = erlzmq:connect(Socket, ServerAddr),
-  lager:info("[Robot-~p] Robot start dealing with messages.(~p)~n", [RobotId, self()]),
+  lager:info("[Robot-~p] Start dealing with messages.(~p)~n", [RobotId, self()]),
   ReplyCallback = list_to_atom("robot-cb-" ++ integer_to_list(RobotId)),
   loop(RobotId, ReplyCallback, Socket, Context).
 
@@ -24,7 +24,7 @@ loop(RobotId, Receiver, Socket, Context) ->
     stop ->
       erlzmq:close(Socket),
       erlzmq:term(Context),
-      lager:warning("[Robot-~p] Robot stop dealing with messages.~n", [RobotId]),
+      lager:warning("[Robot-~p] Stop dealing with messages.~n", [RobotId]),
       stop;
     {send, TransUnit} ->
       Bin = list_to_binary(rpc_pb:encode_transunit(TransUnit)),

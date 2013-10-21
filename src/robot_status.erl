@@ -20,7 +20,6 @@ start_link() ->
   gen_server:start_link({local, robot_status}, ?MODULE, [], []).
 
 init(_Args) ->
-  lager:info("Robot status server started."),
   random:seed(now()),
   State = dict:store(random_seed, random:seed(now()), dict:new()),
   {ok, State}.

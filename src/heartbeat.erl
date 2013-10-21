@@ -9,13 +9,13 @@
 
 start(RobotId, MessageDealer) ->
   Heartbeat = list_to_atom("robot-hb-" ++ integer_to_list(RobotId)),
-  lager:info("[Robot-~p] Robot start heartbeating. (~p)~n", [RobotId, Heartbeat]),
+  lager:info("[Robot-~p] Start heartbeating. (~p -> ~p)~n", [RobotId, Heartbeat, self()]),
   pow(RobotId, MessageDealer).
 
 pow(RobotId, MessageDealer) ->
   receive
     stop ->
-      lager:warning("[Robot-~p] Robot stop heartbeating.~n", [RobotId]),
+      lager:warning("[Robot-~p] Stop heartbeating.~n", [RobotId]),
       stop
   after 30000 ->
     MessageDealer ! {send, rpc_req:ping()},
