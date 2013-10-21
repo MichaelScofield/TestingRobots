@@ -11,43 +11,50 @@
 
 -compile([{parse_transform, lager_transform}]).
 
+-behaviour(gen_server).
+
 %% API
--export([start/0, init/0]).
+-export([start_link/1, init/1, handle_call/3, handle_info/2, handle_cast/2, terminate/2, code_change/3]).
 
-%% LFC using gen_server behavior
-init() ->
+start_link(ReadyRobotIds) ->
+  gen_server:start_link({local, robot_scheduler}, ?MODULE, ReadyRobotIds, []).
+
+init(ReadyRobotIds) ->
   lager:info("Starting robots scheduler."),
-  true = register(robot_scheduler, spawn_link(?MODULE, start, [])),
-  {ok, self()}.
+  {ok, {ReadyRobotIds, []}}.
 
-start() ->
-  process_flag(trap_exit, true),
-  loop().
+handle_call({start_robot, N}, _From, State) ->
+  lager:info("Ready to start ~p robots.", [N]),
+  {ok, NewState} = start_robot(State, N),
+  {reply, ok, NewState}.
 
-loop() ->
-  receive
-    {'EXIT', From, Reason} ->
-      lager:warning("~p stopped, reason: ~p~n", [From, Reason]),
-      start_robot(1);
-    {start_robot, N} ->
-      lager:info("Ready to start ~p robots.", [N]),
-      start_robot(N)
-  end,
-  loop().
+handle_info({'EXIT', From, Reason}, State) ->
+  lager:warning("Robot ~p stopped, reason: ~p~n", [From, Reason]),
+  {ok, NewState} = start_robot(State, 1),
+  {noreply, NewState}.
 
-start_robot(0) ->
-  ok;
-start_robot(N) ->
-  {ReadyRobotIds, RunningRobotIds} = gen_server:call(robots_global, {get, all_robot_ids}),
+start_robot(State, 0) ->
+  {ok, State};
+start_robot({ReadyRobotIds, RunningRobotIds} = State, N) ->
   Index = gen_server:call(robots_global, {get, next_random, length(ReadyRobotIds)}),
   if
     Index == 0 ->
       lager:warning("No robot can be started."),
-      ok;
+      {ok, State};
     true ->
       RobotId = lists:nth(Index, ReadyRobotIds),
-      spawn_link(robot, start_link, [RobotId]),
+      Pid = spawn(robot, start_link, [RobotId]),
+      lager:info("ReadyRobotIds=~w, starting Robot ~p(~p)~n", [ReadyRobotIds, RobotId, Pid]),
       NewReadyRobotIds = lists:delete(RobotId, ReadyRobotIds),
-      ok = gen_server:call(robots_global, {set, all_robot_ids, {NewReadyRobotIds, [RobotId | RunningRobotIds]}}),
-      start_robot(N - 1)
+      start_robot({NewReadyRobotIds, [RobotId | RunningRobotIds]}, N - 1)
   end.
+
+handle_cast(_Request, _State) ->
+  erlang:error(not_implemented).
+
+terminate(Reason, State) ->
+  lager:warning("Robot Scheduler terminated, reason:~p, state:~p~n", [Reason, State]),
+  ok.
+
+code_change(_OldVsn, _State, _Extra) ->
+  erlang:error(not_implemented).

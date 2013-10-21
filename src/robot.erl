@@ -58,8 +58,6 @@ handle_info(_Info, _StateName, _StateData) ->
 terminate(Reason, StateName, StateData) ->
   RobotId = element(1, StateData),
 
-  io:format("~p~n", [registered()]),
-
   Heartbeat = list_to_atom("robot-hb-" ++ integer_to_list(RobotId)),
   case whereis(Heartbeat) of
     undefine ->
@@ -87,11 +85,9 @@ terminate(Reason, StateName, StateData) ->
       ReplyCallback ! stop
   end,
 
-  io:format("~p~n", [registered()]),
-
   lager:info("robot fsm terminated, reason: ~p, state: ~p, data: ~p~n", [Reason, StateName, StateData]),
 
-  robot_scheduler ! {start_robot, 1},
+  gen_server:call(robot_scheduler, {start_robot, 1}),
   ok.
 
 code_change(_OldVsn, _StateName, _StateData, _Extra) ->
