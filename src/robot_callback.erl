@@ -7,10 +7,9 @@
 -include("rpc_pb.hrl").
 
 %% API
--export([start/2, loop/4]).
+-export([start/3, loop/4]).
 
-start(RobotId, MessageDealer) ->
-  RobotProc = list_to_atom(atom_to_list(robot) ++ integer_to_list(RobotId)),
+start(RobotId, MessageDealer, RobotProc) ->
   RobotTimer = list_to_atom("robot-timer-" ++ integer_to_list(RobotId)), % can only be created after robot has logged in
   ReplyCallback = list_to_atom("robot-cb-" ++ integer_to_list(RobotId)),
   lager:info("[Robot-~p] Start callback. (~p -> ~p)~n", [RobotId, ReplyCallback, self()]),

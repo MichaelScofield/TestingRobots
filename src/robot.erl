@@ -13,7 +13,7 @@ start(RobotId) ->
   MessageDealer = spawn_link(message_dealer, start, [RobotId]),
 
   ReplyCallback = list_to_atom("robot-cb-" ++ integer_to_list(RobotId)),
-  true = register(ReplyCallback, spawn_link(robot_callback, start, [RobotId, MessageDealer])),
+  true = register(ReplyCallback, spawn_link(robot_callback, start, [RobotId, MessageDealer, self()])),
 
   Heartbeat = list_to_atom("robot-hb-" ++ integer_to_list(RobotId)),
   true = register(Heartbeat, spawn_link(heartbeat, start, [RobotId, MessageDealer])),

@@ -27,7 +27,6 @@ handle_cast({start_robot, N}, State) ->
   {noreply, NewState};
 handle_cast({return_robot, RobotId}, {ReadyRobotIds, RunningRobotIds}) ->
   lager:info("[RobotScheduler] Stopping robot ~p", [RobotId]),
-  unregister(list_to_atom(atom_to_list(robot) ++ integer_to_list(RobotId))),
   NewRunningRobotIds = lists:delete(RobotId, RunningRobotIds),
   {noreply, {[RobotId | ReadyRobotIds], NewRunningRobotIds}}.
 
@@ -46,9 +45,8 @@ start_robot({ReadyRobotIds, RunningRobotIds} = State, N) ->
       {ok, State};
     true ->
       RobotId = lists:nth(Index, ReadyRobotIds),
-      Pid = spawn(robot, start, [RobotId]),
-      true = register(list_to_atom(atom_to_list(robot) ++ integer_to_list(RobotId)), Pid),
-      lager:info("[RobotScheduler] ReadyRobotIds = ~w, starting Robot ~p (~p)~n", [ReadyRobotIds, RobotId, Pid]),
+      RobotProc = spawn(robot, start, [RobotId]),
+      lager:info("[RobotScheduler] ReadyRobotIds = ~w, starting Robot ~p (~p)~n", [ReadyRobotIds, RobotId, RobotProc]),
       NewReadyRobotIds = lists:delete(RobotId, ReadyRobotIds),
       start_robot({NewReadyRobotIds, [RobotId | RunningRobotIds]}, N - 1)
   end.
