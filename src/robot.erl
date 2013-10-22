@@ -10,6 +10,8 @@
 start(RobotId) ->
   lager:info("[Robot-~p] Starting...~n", [RobotId]),
 
+  process_flag(trap_exit, true),
+
   MessageDealer = spawn_link(message_dealer, start, [RobotId]),
 
   ReplyCallback = list_to_atom("robot-cb-" ++ integer_to_list(RobotId)),
@@ -30,6 +32,9 @@ loop(RobotId, MessageDealer) ->
       lager:info("[Robot-~p] Login ok, accountId = ~p.~n", [RobotId, AccountId]),
       loop(RobotId, MessageDealer);
     stop ->
+      terminate(RobotId, MessageDealer);
+    {'EXIT', From, Reason} ->
+      lager:error("[Robot-~p] EXIT from ~p, reason: ~p", [From, Reason]),
       terminate(RobotId, MessageDealer)
   end.
 

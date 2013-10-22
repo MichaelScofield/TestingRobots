@@ -35,7 +35,6 @@ loop(RobotProc, RobotId, MessageDealer, RobotTimer) ->
               MessageDealer ! {send, CreateAccountReq},
               lager:info("[Robot-~p] Creating account.", [RobotId]);
             'CLIENT_DISCONNECT' ->
-              lager:error("[Robot-~p] WTF I'm not online? Check the PING!~n", [RobotId]),
               exit(ErrorCode);
             _ ->
               lager:warning("[Robot-~p] Received unknown ErrorMsg: ~p~n", [RobotId, ErrorCode])
