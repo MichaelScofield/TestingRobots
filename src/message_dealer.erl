@@ -30,7 +30,7 @@ loop(RobotId, Receiver, Socket, Context) ->
       Bin = list_to_binary(rpc_pb:encode_transunit(TransUnit)),
       case erlzmq:send(Socket, Bin) of
         ok ->
-          _;
+          ok;
         Error ->
           lager:error("[Robot-~p] Msg ~p cannot be sent. Error: ~p.~n", [RobotId, TransUnit, Error])
       end,
