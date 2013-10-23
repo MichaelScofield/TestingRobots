@@ -34,7 +34,7 @@ loop(RobotId, MessageDealer) ->
     stop ->
       terminate(RobotId, MessageDealer);
     {'EXIT', From, Reason} ->
-      lager:error("[Robot-~p] EXIT from ~p, reason: ~p", [From, Reason]),
+      lager:error("[Robot-~p] EXIT from ~p, reason: ~p", [RobotId, From, Reason]),
       terminate(RobotId, MessageDealer)
   end.
 
