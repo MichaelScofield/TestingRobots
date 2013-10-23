@@ -28,7 +28,12 @@ loop(RobotId, Receiver, Socket, Context) ->
       stop;
     {send, TransUnit} ->
       Bin = list_to_binary(rpc_pb:encode_transunit(TransUnit)),
-      erlzmq:send(Socket, Bin),
+      case erlzmq:send(Socket, Bin) of
+        ok ->
+          lager:info("[MessageDealer-~p] Msg ~p sent.~n", [RobotId, TransUnit]);
+        Error ->
+          lager:error("[MessageDealer-~p] Error sending msg ~p. Reason: ~p.~n", [RobotId, TransUnit, Error])
+      end,
       loop(RobotId, Receiver, Socket, Context)
   after
     100 ->
