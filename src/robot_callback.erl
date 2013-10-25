@@ -18,7 +18,13 @@ start(RobotId, MessageDealer, RobotProc) ->
 loop(RobotProc, RobotId, MessageDealer, RobotTimer) ->
   receive
     {received, ReplyBin} ->
-      ReplyMsg = rpc_pb:decode_transunit(ReplyBin),
+      ReplyMsg = case catch rpc_pb:decode_transunit(ReplyBin) of
+                   {error, Error} ->
+                     lager:error("[Robot-~p] Cannot decode reply ~p~n.", [RobotId, ReplyBin]),
+                     exit(Error);
+                   Reply ->
+                     Reply
+                 end,
       case rpc_pb:get_extension(ReplyMsg, loginreply) of
         {ok, LoginReply} ->
           AccountId = (LoginReply#loginreply.accountinfo)#accountinfo.id,
