@@ -20,7 +20,7 @@ loop(RobotProc, RobotId, MessageDealer, RobotTimer) ->
     {received, ReplyBin} ->
       ReplyMsg = case catch rpc_pb:decode_transunit(ReplyBin) of
                    {error, Error} ->
-                     lager:error("[Robot-~p] Cannot decode reply ~p~n.", [RobotId, ReplyBin]),
+                     lager:error("[Robot-~p] Cannot decode reply ~p.~n", [RobotId, ReplyBin]),
                      exit(Error);
                    Reply ->
                      Reply

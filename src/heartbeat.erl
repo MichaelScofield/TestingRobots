@@ -8,8 +8,7 @@
 -export([start/2, pow/2]).
 
 start(RobotId, MessageDealer) ->
-  Heartbeat = list_to_atom("robot-hb-" ++ integer_to_list(RobotId)),
-  lager:info("[Robot-~p] Start heartbeating. (~p -> ~p)~n", [RobotId, Heartbeat, self()]),
+  lager:info("[Robot-~p] Start heartbeating.~n", [RobotId]),
   pow(RobotId, MessageDealer).
 
 pow(RobotId, MessageDealer) ->
