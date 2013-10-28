@@ -11,11 +11,8 @@ start(RobotId) ->
   {ok, Context} = erlzmq:context(),
   {ok, Socket} = erlzmq:socket(Context, dealer),
   ok = erlzmq:setsockopt(Socket, identity, pid_to_list(self())),
-  ServerAddr = "tcp://10.10.10.10:5570",
-%%   ServerAddr = "tcp://10.10.9.116:5570",
-%%   ServerAddr = "tcp://127.0.0.1:5570",
+  ServerAddr = gen_server:call(robot_status, {get, server_addr}),
   ok = erlzmq:connect(Socket, ServerAddr),
-  lager:info("[Robot-~p] Start dealing with messages.(~p)~n", [RobotId, self()]),
   ReplyCallback = list_to_atom("robot-cb-" ++ integer_to_list(RobotId)),
   loop(RobotId, ReplyCallback, Socket, Context).
 

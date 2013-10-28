@@ -1,0 +1,3 @@
+{application, run_robots,
+  [ {vsn, "0.1"},
+    {mod, {run_robots, [1, 10, 5, "tcp://10.10.10.10:5570"]}}]}.

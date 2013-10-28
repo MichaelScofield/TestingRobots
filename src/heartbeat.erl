@@ -5,11 +5,7 @@
 -compile([{parse_transform, lager_transform}]).
 
 %% API
--export([start/2, pow/2]).
-
-start(RobotId, MessageDealer) ->
-  lager:info("[Robot-~p] Start heartbeating.~n", [RobotId]),
-  pow(RobotId, MessageDealer).
+-export([pow/2]).
 
 pow(RobotId, MessageDealer) ->
   receive

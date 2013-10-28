@@ -8,7 +8,7 @@
 -export([start/1]).
 
 start(RobotId) ->
-  lager:info("[Robot-~p] Starting...~n", [RobotId]),
+  lager:info("[Robot-~p] Initializing...~n", [RobotId]),
 
   process_flag(trap_exit, true),
 
@@ -17,18 +17,17 @@ start(RobotId) ->
   ReplyCallback = list_to_atom("robot-cb-" ++ integer_to_list(RobotId)),
   true = register(ReplyCallback, spawn_link(robot_callback, start, [RobotId, MessageDealer, self()])),
 
-  Heartbeat = spawn_link(heartbeat, start, [RobotId, MessageDealer]),
+  Heartbeat = spawn_link(heartbeat, pow, [RobotId, MessageDealer]),
 
   TransUnit = rpc_req:login_req(RobotId),
   MessageDealer ! {send, TransUnit},
-  lager:info("[Robot-~p] Trying to login.~n", [RobotId]),
 
   loop(RobotId, MessageDealer, Heartbeat).
 
 loop(RobotId, MessageDealer, Heartbeat) ->
   receive
     {logined, AccountId} ->
-      lager:info("[Robot-~p] Login ok, accountId = ~p.~n", [RobotId, AccountId]),
+      lager:info("[Robot-~p] logined, accountId:~p.~n", [RobotId, AccountId]),
       loop(RobotId, MessageDealer, Heartbeat);
     stop ->
       terminate(RobotId, MessageDealer, Heartbeat);

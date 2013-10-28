@@ -46,7 +46,7 @@ start_robot({ReadyRobotIds, RunningRobotIds} = State, N) ->
     true ->
       RobotId = lists:nth(Index, ReadyRobotIds),
       RobotProc = spawn(robot, start, [RobotId]),
-      lager:info("[RobotScheduler] ReadyRobotIds = ~w, starting Robot ~p (~p)~n", [ReadyRobotIds, RobotId, RobotProc]),
+      lager:info("[RobotScheduler] ReadyRobotIds:~w. Starting robot ~p (~p)~n", [ReadyRobotIds, RobotId, RobotProc]),
       NewReadyRobotIds = lists:delete(RobotId, ReadyRobotIds),
       start_robot({NewReadyRobotIds, [RobotId | RunningRobotIds]}, N - 1)
   end.

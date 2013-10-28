@@ -11,8 +11,6 @@
 
 start(RobotId, MessageDealer, RobotProc) ->
   RobotTimer = list_to_atom("robot-timer-" ++ integer_to_list(RobotId)), % can only be created after robot has logged in
-  ReplyCallback = list_to_atom("robot-cb-" ++ integer_to_list(RobotId)),
-  lager:info("[Robot-~p] Start callback. (~p -> ~p)~n", [RobotId, ReplyCallback, self()]),
   loop(RobotProc, RobotId, MessageDealer, RobotTimer).
 
 loop(RobotProc, RobotId, MessageDealer, RobotTimer) ->

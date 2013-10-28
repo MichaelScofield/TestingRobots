@@ -6,12 +6,19 @@
 %%% @end
 %%% Created : 21. Oct 2013 5:20 PM
 %%%-------------------------------------------------------------------
--module(run).
+-module(run_robots).
 -author("lfc").
 
+-behaviour(application).
+
 %% API
--export([start/0]).
+-export([start/2, stop/1, start/0]).
 
 start() ->
-  robot_ss:start_link(1,10,5),
-  receive after infinity -> stop end.
+  application:start(?MODULE).
+
+start(normal, StartArgs) ->
+  robot_ss:start_link(StartArgs).
+
+stop(_State) ->
+  ok.
