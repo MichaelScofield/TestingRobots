@@ -21,9 +21,16 @@ start_link([RobotStartId, RobotCount, RunningRobotsCount, ServerAddr]) ->
   ok = gen_server:call(robot_status, {set, server_addr, ServerAddr}),
   lager:info("Server address is ~p.~n", [ServerAddr]),
 
-  gen_server:cast(robot_scheduler, {start_robot, RunningRobotsCount}),
+  ok = start_robots(RunningRobotsCount),
 
   {ok, self()}.
+
+start_robots(0) ->
+  ok;
+start_robots(RunningRobotsCount) ->
+  gen_server:cast(robot_scheduler, {start_robot, 1}),
+  timer:sleep(5000),
+  start_robots(RunningRobotsCount - 1).
 
 init(ReadyRobotIds) ->
   SupervisorSpec = {one_for_one, 1, 60},
