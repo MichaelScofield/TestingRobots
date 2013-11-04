@@ -5,9 +5,9 @@
 -compile([{parse_transform, lager_transform}]).
 
 %% API
--export([start/1]).
+-export([start/2]).
 
-start(RobotId) ->
+start(RobotId, RobotType) ->
   lager:info("[Robot-~p] Initializing...~n", [RobotId]),
 
   process_flag(trap_exit, true),
@@ -22,13 +22,20 @@ start(RobotId) ->
   TransUnit = rpc_req:login_req(RobotId),
   MessageDealer ! {send, TransUnit},
 
-  loop(RobotId, MessageDealer, Heartbeat).
+  loop(RobotId, RobotType, MessageDealer, Heartbeat).
 
-loop(RobotId, MessageDealer, Heartbeat) ->
+loop(RobotId, RobotType, MessageDealer, Heartbeat) ->
   receive
     {logined, AccountId} ->
       lager:info("[Robot-~p] logined, accountId:~p.~n", [RobotId, AccountId]),
-      loop(RobotId, MessageDealer, Heartbeat);
+      case RobotType of
+        arena ->
+          MessageDealer ! {send, rpc_req:enter_arena_req()},
+          lager:info("[Robot-~p] entering arena...");
+        idle ->
+          ok
+      end,
+      loop(RobotId, RobotType, MessageDealer, Heartbeat);
     stop ->
       terminate(RobotId, MessageDealer, Heartbeat);
     {'EXIT', From, Reason} ->

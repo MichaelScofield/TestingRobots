@@ -44,7 +44,7 @@ loop(RobotProc, RobotId, MessageDealer, RobotTimer) ->
               lager:warning("[Robot-~p] Received unknown ErrorMsg: ~p~n", [RobotId, ErrorCode])
           end;
         undefined ->
-          lager:debug("[Robot-~p] Discard unknown reply: ~p~n", [RobotId, ReplyMsg])
+          lager:warning("[Robot-~p] Discard unknown reply: ~p~n", [RobotId, ReplyMsg])
       end,
       loop(RobotProc, RobotId, MessageDealer, RobotTimer);
     stop ->

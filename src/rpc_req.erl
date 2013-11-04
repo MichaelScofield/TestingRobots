@@ -5,7 +5,7 @@
 -include("rpc_pb.hrl").
 
 %% API
--export([create_account_req/1, login_req/1, ping/0, move/3]).
+-export([create_account_req/1, login_req/1, ping/0, move/3, enter_arena_req/0]).
 
 ping() ->
   Message = #pingmessage{},
@@ -30,6 +30,9 @@ login_req(RobotId) ->
   DeviceId = "robot-!@#-" ++ Id,
   Message = #loginrequest{device_id = DeviceId, client_version = "0.5.0", meta_crc32 = "8414FF96"},
   wrap_transunit(Message).
+
+enter_arena_req() ->
+  wrap_transunit(#enterarenarequest{}).
 
 wrap_transunit(Message) ->
   {_, Second, MicroSec} = now(),

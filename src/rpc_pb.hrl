@@ -220,3 +220,10 @@
 }).
 -endif.
 
+-ifndef(ENTERARENAREQUEST_PB_H).
+-define(ENTERARENAREQUEST_PB_H, true).
+-record(enterarenarequest, {
+    
+}).
+-endif.
+

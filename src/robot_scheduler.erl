@@ -27,8 +27,10 @@ handle_cast({start_robot, N}, State) ->
   {noreply, NewState};
 handle_cast({return_robot, RobotId}, {ReadyRobotIds, RunningRobotIds}) ->
   lager:info("[RobotScheduler] Stopping robot ~p", [RobotId]),
-  NewRunningRobotIds = lists:delete(RobotId, RunningRobotIds),
-  {noreply, {[RobotId | ReadyRobotIds], NewRunningRobotIds}}.
+  {RobotId, RobotType} = lists:keyfind(RobotId, 1, RunningRobotIds),
+  NewRunningRobotIds = lists:keydelete(RobotId, 1, RunningRobotIds),
+  NewReadyRobotIds = lists:keystore(RobotId, 1, ReadyRobotIds, {RobotId, RobotType}),
+  {noreply, {NewReadyRobotIds, NewRunningRobotIds}}.
 
 handle_info({'EXIT', From, Reason}, State) ->
   lager:warning("[RobotScheduler] Robot ~p stopped, reason: ~p~n", [From, Reason]),
@@ -44,11 +46,12 @@ start_robot({ReadyRobotIds, RunningRobotIds} = State, N) ->
       lager:warning("[RobotScheduler] No robot can be started."),
       {ok, State};
     true ->
-      RobotId = lists:nth(Index, ReadyRobotIds),
-      RobotProc = spawn(robot, start, [RobotId]),
+      {RobotId, RobotType} = lists:nth(Index, ReadyRobotIds),
+      RobotProc = spawn(robot, start, [RobotId, RobotType]),
       lager:info("[RobotScheduler] ReadyRobotIds:~w. Starting robot ~p (~p)~n", [ReadyRobotIds, RobotId, RobotProc]),
-      NewReadyRobotIds = lists:delete(RobotId, ReadyRobotIds),
-      start_robot({NewReadyRobotIds, [RobotId | RunningRobotIds]}, N - 1)
+      NewReadyRobotIds = lists:keydelete(RobotId, 1, ReadyRobotIds),
+      NewRunningRobotIds = lists:keystore(RobotId, 1, RunningRobotIds, {RobotId, RobotType}),
+      start_robot({NewReadyRobotIds, NewRunningRobotIds}, N - 1)
   end.
 
 handle_call(_Request, _From, _State) ->

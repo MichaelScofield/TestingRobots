@@ -2,8 +2,10 @@
 
 -module(rpc_pb).
 
--export([encode_avatarmovemessage/1,
-	 decode_avatarmovemessage/1,
+-export([encode_enterarenarequest/1,
+	 decode_enterarenarequest/1,
+	 delimited_decode_enterarenarequest/1,
+	 encode_avatarmovemessage/1, decode_avatarmovemessage/1,
 	 delimited_decode_avatarmovemessage/1,
 	 encode_pingmessage/1, decode_pingmessage/1,
 	 delimited_decode_pingmessage/1,
@@ -46,6 +48,8 @@
 -export([decode_extensions/1]).
 
 -export([encode/1, decode/2, delimited_decode/2]).
+
+-record(enterarenarequest, {}).
 
 -record(avatarmovemessage,
 	{grid_x, grid_y, account_id}).
@@ -112,6 +116,13 @@ encode([]) -> [];
 encode(Records) when is_list(Records) ->
     delimited_encode(Records);
 encode(Record) -> encode(element(1, Record), Record).
+
+encode_enterarenarequest(Records)
+    when is_list(Records) ->
+    delimited_encode(Records);
+encode_enterarenarequest(Record)
+    when is_record(Record, enterarenarequest) ->
+    encode(enterarenarequest, Record).
 
 encode_avatarmovemessage(Records)
     when is_list(Records) ->
@@ -332,6 +343,12 @@ encode(avatarmovemessage, Records)
     delimited_encode(Records);
 encode(avatarmovemessage, Record) ->
     [iolist(avatarmovemessage, Record)
+     | encode_extensions(Record)];
+encode(enterarenarequest, Records)
+    when is_list(Records) ->
+    delimited_encode(Records);
+encode(enterarenarequest, Record) ->
+    [iolist(enterarenarequest, Record)
      | encode_extensions(Record)].
 
 encode_extensions(#transunit{'$extensions' =
@@ -667,7 +684,8 @@ iolist(avatarmovemessage, Record) ->
 	  int32, []),
      pack(3, required,
 	  with_default(Record#avatarmovemessage.account_id, none),
-	  int64, [])].
+	  int64, [])];
+iolist(enterarenarequest, _Record) -> [].
 
 with_default(Default, Default) -> undefined;
 with_default(Val, _) -> Val.
@@ -740,6 +758,9 @@ int_to_enum(errorcode, 2) -> 'CLIENT_DISCONNECT';
 int_to_enum(errorcode, 1) -> 'DUPLICATE_NAME';
 int_to_enum(errorcode, 0) -> 'SUCCESS';
 int_to_enum(_, Val) -> Val.
+
+decode_enterarenarequest(Bytes) when is_binary(Bytes) ->
+    decode(enterarenarequest, Bytes).
 
 decode_avatarmovemessage(Bytes) when is_binary(Bytes) ->
     decode(avatarmovemessage, Bytes).
@@ -863,6 +884,9 @@ delimited_decode_pingmessage(Bytes) ->
 
 delimited_decode_avatarmovemessage(Bytes) ->
     delimited_decode(avatarmovemessage, Bytes).
+
+delimited_decode_enterarenarequest(Bytes) ->
+    delimited_decode(enterarenarequest, Bytes).
 
 delimited_decode(Type, Bytes) when is_binary(Bytes) ->
     delimited_decode(Type, Bytes, []).
@@ -1053,7 +1077,13 @@ decode(avatarmovemessage, Bytes)
 	     {2, grid_y, int32, []}, {1, grid_x, int32, []}],
     Defaults = [],
     Decoded = decode(Bytes, Types, Defaults),
-    to_record(avatarmovemessage, Decoded).
+    to_record(avatarmovemessage, Decoded);
+decode(enterarenarequest, Bytes)
+    when is_binary(Bytes) ->
+    Types = [],
+    Defaults = [],
+    Decoded = decode(Bytes, Types, Defaults),
+    to_record(enterarenarequest, Decoded).
 
 decode(<<>>, Types, Acc) ->
     reverse_repeated_fields(Acc, Types);
@@ -1303,6 +1333,15 @@ to_record(avatarmovemessage, DecodedTuples) ->
 						   Record, Name, Val)
 			  end,
 			  #avatarmovemessage{}, DecodedTuples),
+    Record1;
+to_record(enterarenarequest, DecodedTuples) ->
+    Record1 = lists:foldr(fun ({_FNum, Name, Val},
+			       Record) ->
+				  set_record_field(record_info(fields,
+							       enterarenarequest),
+						   Record, Name, Val)
+			  end,
+			  #enterarenarequest{}, DecodedTuples),
     Record1.
 
 decode_extensions(#transunit{'$extensions' =
@@ -1311,6 +1350,8 @@ decode_extensions(#transunit{'$extensions' =
     Types = [{9999, errormessage, errormessage,
 	      [is_record]},
 	     {9998, pingmessage, pingmessage, [is_record]},
+	     {1301, enterarenarequest, enterarenarequest,
+	      [is_record]},
 	     {1015, mapInitMessage, mapinitmessage, [is_record]},
 	     {1005, avatarEnterVisionMessage,
 	      avatarentervisionmessage, [is_record]},
@@ -1325,7 +1366,7 @@ decode_extensions(#transunit{'$extensions' =
 	     {1, sn, int32, []}, {1, sn, int32, []},
 	     {1, sn, int32, []}, {1, sn, int32, []},
 	     {1, sn, int32, []}, {1, sn, int32, []},
-	     {1, sn, int32, []}],
+	     {1, sn, int32, []}, {1, sn, int32, []}],
     NewExtensions = decode_extensions(Types,
 				      dict:to_list(Extensions), []),
     Record#transunit{'$extensions' = NewExtensions};
@@ -1512,8 +1553,26 @@ has_extension(#transunit{'$extensions' = Extensions},
 has_extension(#transunit{'$extensions' = Extensions},
 	      avatarmovemessage) ->
     dict:is_key(avatarmovemessage, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      1) ->
+    dict:is_key(1, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      sn) ->
+    dict:is_key(sn, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      1301) ->
+    dict:is_key(1301, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      enterarenarequest) ->
+    dict:is_key(enterarenarequest, Extensions);
 has_extension(_Record, _FieldName) -> false.
 
+get_extension(Record, enterarenarequest)
+    when is_record(Record, transunit) ->
+    get_extension(Record, 1301);
+get_extension(Record, sn)
+    when is_record(Record, transunit) ->
+    get_extension(Record, 1);
 get_extension(Record, avatarmovemessage)
     when is_record(Record, transunit) ->
     get_extension(Record, 1004);
@@ -1688,6 +1747,19 @@ set_extension(#transunit{'$extensions' = Extensions} =
 	      avatarmovemessage, Value) ->
     NewExtends = dict:store(1004,
 			    {optional, Value, avatarmovemessage, none},
+			    Extensions),
+    {ok, Record#transunit{'$extensions' = NewExtends}};
+set_extension(#transunit{'$extensions' = Extensions} =
+		  Record,
+	      sn, Value) ->
+    NewExtends = dict:store(1,
+			    {required, Value, int32, none}, Extensions),
+    {ok, Record#transunit{'$extensions' = NewExtends}};
+set_extension(#transunit{'$extensions' = Extensions} =
+		  Record,
+	      enterarenarequest, Value) ->
+    NewExtends = dict:store(1301,
+			    {optional, Value, enterarenarequest, none},
 			    Extensions),
     {ok, Record#transunit{'$extensions' = NewExtends}};
 set_extension(Record, _, _) -> {error, Record}.

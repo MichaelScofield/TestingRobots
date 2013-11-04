@@ -7,16 +7,16 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/1]).
+-export([start_link/5]).
 
 %% supervisor callback
 -export([init/1]).
 
-start_link([RobotStartId, RobotCount, RunningRobotsCount, ServerAddr]) ->
+start_link(RobotStartId, RobotCount, RunningRobotsCount, ServerAddr, RobotType) ->
   lager:start(),
 
   ReadyRobotIds = lists:seq(RobotStartId, RobotStartId + RobotCount - 1),
-  supervisor:start_link({local, robot_super_supervisor}, ?MODULE, [ReadyRobotIds]),
+  supervisor:start_link({local, robot_super_supervisor}, ?MODULE, [[{RobotId, RobotType} || RobotId <- ReadyRobotIds]]),
 
   ok = gen_server:call(robot_status, {set, server_addr, ServerAddr}),
   lager:info("Server address is ~p.~n", [ServerAddr]),

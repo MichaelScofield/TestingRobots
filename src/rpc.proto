@@ -219,3 +219,11 @@ message AvatarMoveMessage {
 extend TransUnit {
     optional AvatarMoveMessage avatarmovemessage = 1004;
 }
+
+message EnterArenaRequest {
+
+}
+
+extend TransUnit {
+    optional EnterArenaRequest enterarenarequest = 1301;
+}
