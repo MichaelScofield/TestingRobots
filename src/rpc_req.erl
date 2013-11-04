@@ -5,7 +5,7 @@
 -include("rpc_pb.hrl").
 
 %% API
--export([create_account_req/1, login_req/1, ping/0, move/3, enter_arena_req/0]).
+-export([create_account_req/1, login_req/1, ping/0, move/3, enter_arena_req/0, change_city_req/1]).
 
 ping() ->
   Message = #pingmessage{},
@@ -33,6 +33,9 @@ login_req(RobotId) ->
 
 enter_arena_req() ->
   wrap_transunit(#enterarenarequest{}).
+
+change_city_req(CityId) ->
+  wrap_transunit(#changemaprequest{city_meta_id = CityId}).
 
 wrap_transunit(Message) ->
   {_, Second, MicroSec} = now(),

@@ -227,3 +227,11 @@ message EnterArenaRequest {
 extend TransUnit {
     optional EnterArenaRequest enterarenarequest = 1301;
 }
+
+message ChangeMapRequest {
+    required int32 city_meta_id = 1;
+}
+
+extend TransUnit {
+    optional ChangeMapRequest changemaprequest = 1009;
+}

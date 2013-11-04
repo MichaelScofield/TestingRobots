@@ -227,3 +227,10 @@
 }).
 -endif.
 
+-ifndef(CHANGEMAPREQUEST_PB_H).
+-define(CHANGEMAPREQUEST_PB_H, true).
+-record(changemaprequest, {
+    city_meta_id = erlang:error({required, city_meta_id})
+}).
+-endif.
+

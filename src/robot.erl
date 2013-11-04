@@ -30,6 +30,7 @@ loop(RobotId, RobotType, MessageDealer, Heartbeat) ->
       lager:info("[Robot-~p] logined, accountId:~p.~n", [RobotId, AccountId]),
       case RobotType of
         arena ->
+          MessageDealer ! {send, rpc_req:change_city_req(100002)},
           MessageDealer ! {send, rpc_req:enter_arena_req()},
           lager:info("[Robot-~p] entering arena...");
         idle ->

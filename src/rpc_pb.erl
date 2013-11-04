@@ -2,8 +2,10 @@
 
 -module(rpc_pb).
 
--export([encode_enterarenarequest/1,
-	 decode_enterarenarequest/1,
+-export([encode_changemaprequest/1,
+	 decode_changemaprequest/1,
+	 delimited_decode_changemaprequest/1,
+	 encode_enterarenarequest/1, decode_enterarenarequest/1,
 	 delimited_decode_enterarenarequest/1,
 	 encode_avatarmovemessage/1, decode_avatarmovemessage/1,
 	 delimited_decode_avatarmovemessage/1,
@@ -48,6 +50,8 @@
 -export([decode_extensions/1]).
 
 -export([encode/1, decode/2, delimited_decode/2]).
+
+-record(changemaprequest, {city_meta_id}).
 
 -record(enterarenarequest, {}).
 
@@ -116,6 +120,13 @@ encode([]) -> [];
 encode(Records) when is_list(Records) ->
     delimited_encode(Records);
 encode(Record) -> encode(element(1, Record), Record).
+
+encode_changemaprequest(Records)
+    when is_list(Records) ->
+    delimited_encode(Records);
+encode_changemaprequest(Record)
+    when is_record(Record, changemaprequest) ->
+    encode(changemaprequest, Record).
 
 encode_enterarenarequest(Records)
     when is_list(Records) ->
@@ -349,6 +360,12 @@ encode(enterarenarequest, Records)
     delimited_encode(Records);
 encode(enterarenarequest, Record) ->
     [iolist(enterarenarequest, Record)
+     | encode_extensions(Record)];
+encode(changemaprequest, Records)
+    when is_list(Records) ->
+    delimited_encode(Records);
+encode(changemaprequest, Record) ->
+    [iolist(changemaprequest, Record)
      | encode_extensions(Record)].
 
 encode_extensions(#transunit{'$extensions' =
@@ -685,7 +702,12 @@ iolist(avatarmovemessage, Record) ->
      pack(3, required,
 	  with_default(Record#avatarmovemessage.account_id, none),
 	  int64, [])];
-iolist(enterarenarequest, _Record) -> [].
+iolist(enterarenarequest, _Record) -> [];
+iolist(changemaprequest, Record) ->
+    [pack(1, required,
+	  with_default(Record#changemaprequest.city_meta_id,
+		       none),
+	  int32, [])].
 
 with_default(Default, Default) -> undefined;
 with_default(Val, _) -> Val.
@@ -758,6 +780,9 @@ int_to_enum(errorcode, 2) -> 'CLIENT_DISCONNECT';
 int_to_enum(errorcode, 1) -> 'DUPLICATE_NAME';
 int_to_enum(errorcode, 0) -> 'SUCCESS';
 int_to_enum(_, Val) -> Val.
+
+decode_changemaprequest(Bytes) when is_binary(Bytes) ->
+    decode(changemaprequest, Bytes).
 
 decode_enterarenarequest(Bytes) when is_binary(Bytes) ->
     decode(enterarenarequest, Bytes).
@@ -887,6 +912,9 @@ delimited_decode_avatarmovemessage(Bytes) ->
 
 delimited_decode_enterarenarequest(Bytes) ->
     delimited_decode(enterarenarequest, Bytes).
+
+delimited_decode_changemaprequest(Bytes) ->
+    delimited_decode(changemaprequest, Bytes).
 
 delimited_decode(Type, Bytes) when is_binary(Bytes) ->
     delimited_decode(Type, Bytes, []).
@@ -1083,7 +1111,12 @@ decode(enterarenarequest, Bytes)
     Types = [],
     Defaults = [],
     Decoded = decode(Bytes, Types, Defaults),
-    to_record(enterarenarequest, Decoded).
+    to_record(enterarenarequest, Decoded);
+decode(changemaprequest, Bytes) when is_binary(Bytes) ->
+    Types = [{1, city_meta_id, int32, []}],
+    Defaults = [],
+    Decoded = decode(Bytes, Types, Defaults),
+    to_record(changemaprequest, Decoded).
 
 decode(<<>>, Types, Acc) ->
     reverse_repeated_fields(Acc, Types);
@@ -1342,6 +1375,15 @@ to_record(enterarenarequest, DecodedTuples) ->
 						   Record, Name, Val)
 			  end,
 			  #enterarenarequest{}, DecodedTuples),
+    Record1;
+to_record(changemaprequest, DecodedTuples) ->
+    Record1 = lists:foldr(fun ({_FNum, Name, Val},
+			       Record) ->
+				  set_record_field(record_info(fields,
+							       changemaprequest),
+						   Record, Name, Val)
+			  end,
+			  #changemaprequest{}, DecodedTuples),
     Record1.
 
 decode_extensions(#transunit{'$extensions' =
@@ -1353,6 +1395,7 @@ decode_extensions(#transunit{'$extensions' =
 	     {1301, enterarenarequest, enterarenarequest,
 	      [is_record]},
 	     {1015, mapInitMessage, mapinitmessage, [is_record]},
+	     {1009, changemaprequest, changemaprequest, [is_record]},
 	     {1005, avatarEnterVisionMessage,
 	      avatarentervisionmessage, [is_record]},
 	     {1004, avatarmovemessage, avatarmovemessage,
@@ -1366,7 +1409,8 @@ decode_extensions(#transunit{'$extensions' =
 	     {1, sn, int32, []}, {1, sn, int32, []},
 	     {1, sn, int32, []}, {1, sn, int32, []},
 	     {1, sn, int32, []}, {1, sn, int32, []},
-	     {1, sn, int32, []}, {1, sn, int32, []}],
+	     {1, sn, int32, []}, {1, sn, int32, []},
+	     {1, sn, int32, []}],
     NewExtensions = decode_extensions(Types,
 				      dict:to_list(Extensions), []),
     Record#transunit{'$extensions' = NewExtensions};
@@ -1565,8 +1609,26 @@ has_extension(#transunit{'$extensions' = Extensions},
 has_extension(#transunit{'$extensions' = Extensions},
 	      enterarenarequest) ->
     dict:is_key(enterarenarequest, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      1) ->
+    dict:is_key(1, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      sn) ->
+    dict:is_key(sn, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      1009) ->
+    dict:is_key(1009, Extensions);
+has_extension(#transunit{'$extensions' = Extensions},
+	      changemaprequest) ->
+    dict:is_key(changemaprequest, Extensions);
 has_extension(_Record, _FieldName) -> false.
 
+get_extension(Record, changemaprequest)
+    when is_record(Record, transunit) ->
+    get_extension(Record, 1009);
+get_extension(Record, sn)
+    when is_record(Record, transunit) ->
+    get_extension(Record, 1);
 get_extension(Record, enterarenarequest)
     when is_record(Record, transunit) ->
     get_extension(Record, 1301);
@@ -1760,6 +1822,19 @@ set_extension(#transunit{'$extensions' = Extensions} =
 	      enterarenarequest, Value) ->
     NewExtends = dict:store(1301,
 			    {optional, Value, enterarenarequest, none},
+			    Extensions),
+    {ok, Record#transunit{'$extensions' = NewExtends}};
+set_extension(#transunit{'$extensions' = Extensions} =
+		  Record,
+	      sn, Value) ->
+    NewExtends = dict:store(1,
+			    {required, Value, int32, none}, Extensions),
+    {ok, Record#transunit{'$extensions' = NewExtends}};
+set_extension(#transunit{'$extensions' = Extensions} =
+		  Record,
+	      changemaprequest, Value) ->
+    NewExtends = dict:store(1009,
+			    {optional, Value, changemaprequest, none},
 			    Extensions),
     {ok, Record#transunit{'$extensions' = NewExtends}};
 set_extension(Record, _, _) -> {error, Record}.
