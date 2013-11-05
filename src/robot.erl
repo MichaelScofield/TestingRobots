@@ -12,10 +12,7 @@ start(RobotId, RobotType) ->
 
   process_flag(trap_exit, true),
 
-  MessageDealer = spawn_link(message_dealer, start, [RobotId]),
-
-  ReplyCallback = list_to_atom("robot-cb-" ++ integer_to_list(RobotId)),
-  true = register(ReplyCallback, spawn_link(robot_callback, start, [RobotId, MessageDealer, self()])),
+  MessageDealer = spawn_link(message_dealer, start, [RobotId, self()]),
 
   Heartbeat = spawn_link(heartbeat, pow, [RobotId, MessageDealer]),
 
@@ -42,6 +39,9 @@ loop(RobotId, RobotType, MessageDealer, Heartbeat) ->
     {'EXIT', From, Reason} ->
       lager:error("[Robot-~p] EXIT from ~p, reason: ~p", [RobotId, From, Reason]),
       terminate(RobotId, MessageDealer, Heartbeat)
+  after 600000 ->
+    lager:warning("[Robot-~p] Timeout", [RobotId]),
+    terminate(RobotId, MessageDealer, Heartbeat)
   end.
 
 terminate(RobotId, MessageDealer, Heartbeat) ->

@@ -4,21 +4,24 @@
 
 -compile([{parse_transform, lager_transform}]).
 
-%% API
--export([start/1, loop/4]).
+-include("rpc_pb.hrl").
 
-start(RobotId) ->
+%% API
+-export([start/2]).
+
+start(RobotId, RobotPid) ->
   {ok, Context} = erlzmq:context(),
   {ok, Socket} = erlzmq:socket(Context, dealer),
   ok = erlzmq:setsockopt(Socket, identity, pid_to_list(self())),
   ServerAddr = gen_server:call(robot_status, {get, server_addr}),
   ok = erlzmq:connect(Socket, ServerAddr),
-  ReplyCallback = list_to_atom("robot-cb-" ++ integer_to_list(RobotId)),
-  loop(RobotId, ReplyCallback, Socket, Context).
+  loop(RobotId, RobotPid, Socket, Context).
 
-loop(RobotId, Receiver, Socket, Context) ->
+loop(RobotId, RobotPid, Socket, Context) ->
   receive
     stop ->
+      list_to_atom("robot-timer-" ++ integer_to_list(RobotId)) ! stop,
+
       erlzmq:close(Socket),
       erlzmq:term(Context),
       lager:warning("[Robot-~p] Stop dealing with messages.~n", [RobotId]),
@@ -31,18 +34,50 @@ loop(RobotId, Receiver, Socket, Context) ->
         Error ->
           lager:error("[Robot-~p] Msg ~p cannot be sent. Error: ~p.~n", [RobotId, TransUnit, Error])
       end,
-      loop(RobotId, Receiver, Socket, Context)
+      loop(RobotId, RobotPid, Socket, Context)
   after
     100 ->
       case polling(Socket, 100, 10) of
         {error, eterm} ->
           stop;
         {error, timeout} ->
-          loop(RobotId, Receiver, Socket, Context);
+          loop(RobotId, RobotPid, Socket, Context);
         {ok, Msg} ->
-          Receiver ! {received, Msg},
-          loop(RobotId, Receiver, Socket, Context)
+          handle_reply(RobotId, RobotPid, Msg),
+          loop(RobotId, RobotPid, Socket, Context)
       end
+  end.
+
+handle_reply(RobotId, RobotPid, ReplyBin) ->
+  ReplyMsg = case catch rpc_pb:decode_transunit(ReplyBin) of
+               {error, Error} ->
+                 lager:error("[Robot-~p] Cannot decode reply ~p.~n", [RobotId, ReplyBin]),
+                 exit(Error);
+               Reply ->
+                 Reply
+             end,
+  case rpc_pb:get_extension(ReplyMsg, loginreply) of
+    {ok, LoginReply} ->
+      AccountId = (LoginReply#loginreply.accountinfo)#accountinfo.id,
+      true = register(list_to_atom("robot-timer-" ++ integer_to_list(RobotId)), spawn_link(robot_timer, start, [RobotId, AccountId, self()])),
+      RobotPid ! {logined, AccountId};
+    undefined -> ok
+  end,
+  case rpc_pb:get_extension(ReplyMsg, errormessage) of
+    {ok, ErrorMessage} ->
+      ErrorCode = ErrorMessage#errormessage.error,
+      case ErrorCode of
+        'NO_SUCH_ACCOUNT' ->
+          CreateAccountReq = rpc_req:create_account_req(RobotId),
+          self() ! {send, CreateAccountReq},
+          lager:info("[Robot-~p] Creating account.", [RobotId]);
+        'CLIENT_DISCONNECT' ->
+          exit(ErrorCode);
+        _ ->
+          lager:warning("[Robot-~p] Received unknown ErrorMsg: ~p~n", [RobotId, ErrorCode])
+      end;
+    undefined ->
+      lager:warning("[Robot-~p] Discard unknown reply: ~p~n", [RobotId, ReplyMsg])
   end.
 
 polling(_Socket, 0, _Delay) ->
