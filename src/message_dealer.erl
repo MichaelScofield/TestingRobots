@@ -20,8 +20,6 @@ start(RobotId, RobotPid) ->
 loop(RobotId, RobotPid, Socket, Context) ->
   receive
     stop ->
-      list_to_atom("robot-timer-" ++ integer_to_list(RobotId)) ! stop,
-
       erlzmq:close(Socket),
       erlzmq:term(Context),
       lager:warning("[Robot-~p] Stop dealing with messages.~n", [RobotId]),
@@ -59,7 +57,6 @@ handle_reply(RobotId, RobotPid, ReplyBin) ->
   case rpc_pb:get_extension(ReplyMsg, loginreply) of
     {ok, LoginReply} ->
       AccountId = (LoginReply#loginreply.accountinfo)#accountinfo.id,
-      true = register(list_to_atom("robot-timer-" ++ integer_to_list(RobotId)), spawn_link(robot_timer, start, [RobotId, AccountId, self()])),
       RobotPid ! {logined, AccountId};
     undefined -> ok
   end,

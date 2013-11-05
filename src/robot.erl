@@ -25,6 +25,7 @@ loop(RobotId, RobotType, MessageDealer, Heartbeat) ->
   receive
     {logined, AccountId} ->
       lager:info("[Robot-~p] logined, accountId:~p.~n", [RobotId, AccountId]),
+      true = register(list_to_atom("robot-timer-" ++ integer_to_list(RobotId)), spawn_link(robot_timer, start, [RobotId, AccountId, self()])),
       case RobotType of
         arena ->
           MessageDealer ! {send, rpc_req:change_city_req(100002)},
@@ -48,6 +49,10 @@ terminate(RobotId, MessageDealer, Heartbeat) ->
   Heartbeat ! stop,
 
   MessageDealer ! stop,
+
+  RobotTimer = list_to_atom("robot-timer-" ++ integer_to_list(RobotId)),
+  RobotTimer ! stop,
+  unregister(RobotTimer),
 
   gen_server:cast(robot_scheduler, {return_robot, RobotId}),
   gen_server:cast(robot_scheduler, {start_robot, 1}),
