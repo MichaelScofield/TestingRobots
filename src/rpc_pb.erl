@@ -82,7 +82,7 @@
 
 -record(loginreply,
 	{errorcode, characterinfo, accountinfo, bagitems,
-	 talentinfo, map, unlockedcityid}).
+	 talentinfo, map, unlocked_city_id}).
 
 -record(loginrequest,
 	{device_id, client_version, meta_crc32}).
@@ -593,8 +593,8 @@ iolist(loginreply, Record) ->
      pack(7, required,
 	  with_default(Record#loginreply.map, none),
 	  mapinitmessage, []),
-     pack(11, required,
-	  with_default(Record#loginreply.unlockedcityid, none),
+     pack(9, repeated,
+	  with_default(Record#loginreply.unlocked_city_id, none),
 	  int32, [])];
 iolist(accountinfo, Record) ->
     [pack(1, required,
@@ -1025,7 +1025,7 @@ decode(loginrequest, Bytes) when is_binary(Bytes) ->
     Decoded = decode(Bytes, Types, Defaults),
     to_record(loginrequest, Decoded);
 decode(loginreply, Bytes) when is_binary(Bytes) ->
-    Types = [{11, unlockedcityid, int32, []},
+    Types = [{9, unlocked_city_id, int32, [repeated]},
 	     {7, map, mapinitmessage, [is_record]},
 	     {6, talentinfo, talentinfo, [is_record, repeated]},
 	     {5, bagitems, bagitem, [is_record, repeated]},
@@ -1034,7 +1034,7 @@ decode(loginreply, Bytes) when is_binary(Bytes) ->
 	      [is_record, repeated]},
 	     {1, errorcode, errorcode, []}],
     Defaults = [{2, characterinfo, []}, {5, bagitems, []},
-		{6, talentinfo, []}],
+		{6, talentinfo, []}, {9, unlocked_city_id, []}],
     Decoded = decode(Bytes, Types, Defaults),
     to_record(loginreply, Decoded);
 decode(accountinfo, Bytes) when is_binary(Bytes) ->

@@ -121,7 +121,7 @@
     bagitems = [],
     talentinfo = [],
     map = erlang:error({required, map}),
-    unlockedcityid = erlang:error({required, unlockedcityid})
+    unlocked_city_id = []
 }).
 -endif.
 

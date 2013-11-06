@@ -25,7 +25,7 @@ loop(RobotId, RobotType, MessageDealer, Heartbeat) ->
   receive
     {logined, AccountId} ->
       lager:info("[Robot-~p] logined, accountId:~p.~n", [RobotId, AccountId]),
-      true = register(list_to_atom("robot-timer-" ++ integer_to_list(RobotId)), spawn_link(robot_timer, start, [RobotId, AccountId, self()])),
+      true = register(list_to_atom("robot-timer-" ++ integer_to_list(RobotId)), spawn_link(robot_timer, start, [RobotId, AccountId, MessageDealer])),
       case RobotType of
         arena ->
           MessageDealer ! {send, rpc_req:change_city_req(100002)},

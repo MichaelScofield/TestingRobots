@@ -121,7 +121,7 @@ message LogInReply {
     repeated BagItem bagItems = 5;
     repeated TalentInfo talentInfo = 6;
     required MapInitMessage map = 7;
-    required int32 unlockedCityId = 11;
+    repeated int32 unlocked_city_id = 9;
 }
 
 extend TransUnit {
