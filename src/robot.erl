@@ -51,8 +51,13 @@ terminate(RobotId, MessageDealer, Heartbeat) ->
   MessageDealer ! stop,
 
   RobotTimer = list_to_atom("robot-timer-" ++ integer_to_list(RobotId)),
-  RobotTimer ! stop,
-  unregister(RobotTimer),
+  case whereis(RobotTimer) of
+    Pid ->
+      Pid ! stop,
+      catch unregister(RobotTimer);
+    undefined ->
+      ok
+  end,
 
   gen_server:cast(robot_scheduler, {return_robot, RobotId}),
   gen_server:cast(robot_scheduler, {start_robot, 1}),
