@@ -19,13 +19,13 @@ start(RobotId, RobotType) ->
   TransUnit = rpc_req:login_req(RobotId),
   MessageDealer ! {send, TransUnit},
 
-  loop(RobotId, RobotType, MessageDealer, Heartbeat).
+  loop(RobotId, RobotType, MessageDealer, Heartbeat, null).
 
-loop(RobotId, RobotType, MessageDealer, Heartbeat) ->
+loop(RobotId, RobotType, MessageDealer, Heartbeat, RobotTimer) ->
   receive
     {logined, AccountId} ->
       lager:info("[Robot-~p] logined, accountId:~p.~n", [RobotId, AccountId]),
-      true = register(list_to_atom("robot-timer-" ++ integer_to_list(RobotId)), spawn_link(robot_timer, start, [RobotId, AccountId, MessageDealer])),
+      NewRobotTimer = spawn_link(robot_timer, start, [RobotId, AccountId, MessageDealer]),
       case RobotType of
         arena ->
           MessageDealer ! {send, rpc_req:change_city_req(100002)},
@@ -34,29 +34,25 @@ loop(RobotId, RobotType, MessageDealer, Heartbeat) ->
         idle ->
           ok
       end,
-      loop(RobotId, RobotType, MessageDealer, Heartbeat);
+      loop(RobotId, RobotType, MessageDealer, Heartbeat, NewRobotTimer);
     stop ->
-      terminate(RobotId, MessageDealer, Heartbeat);
+      terminate(RobotId, MessageDealer, Heartbeat, RobotTimer);
     {'EXIT', From, Reason} ->
       lager:error("[Robot-~p] EXIT from ~p, reason: ~p", [RobotId, From, Reason]),
-      terminate(RobotId, MessageDealer, Heartbeat)
+      terminate(RobotId, MessageDealer, Heartbeat, RobotTimer)
   after 600000 ->
     lager:warning("[Robot-~p] Timeout", [RobotId]),
-    terminate(RobotId, MessageDealer, Heartbeat)
+    terminate(RobotId, MessageDealer, Heartbeat, RobotTimer)
   end.
 
-terminate(RobotId, MessageDealer, Heartbeat) ->
+terminate(RobotId, MessageDealer, Heartbeat, RobotTimer) ->
   Heartbeat ! stop,
 
   MessageDealer ! stop,
 
-  RobotTimer = list_to_atom("robot-timer-" ++ integer_to_list(RobotId)),
-  case whereis(RobotTimer) of
-    Pid ->
-      Pid ! stop,
-      catch unregister(RobotTimer);
-    undefined ->
-      ok
+  case RobotTimer of
+    Pid -> Pid ! stop;
+    null -> ok
   end,
 
   gen_server:cast(robot_scheduler, {return_robot, RobotId}),
