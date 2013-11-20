@@ -35,9 +35,9 @@ start(normal, _StartArgs) ->
 
   case init:get_argument(robot_type) of
     error ->
-      robot_ss:start_link(list_to_integer(RobotStartId), list_to_integer(RobotCount), list_to_integer(RunningRobotsCount), ServerAddr, idle);
+      robot_supervisor:start_link(list_to_integer(RobotStartId), list_to_integer(RobotCount), list_to_integer(RunningRobotsCount), ServerAddr, idle);
     {ok, [[RobotType]]} ->
-      robot_ss:start_link(list_to_integer(RobotStartId), list_to_integer(RobotCount), list_to_integer(RunningRobotsCount), ServerAddr, list_to_atom(RobotType))
+      robot_supervisor:start_link(list_to_integer(RobotStartId), list_to_integer(RobotCount), list_to_integer(RunningRobotsCount), ServerAddr, list_to_atom(RobotType))
   end.
 
 stop(_State) ->

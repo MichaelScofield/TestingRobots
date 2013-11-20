@@ -1,5 +1,5 @@
 %% Copyright
--module(robot_ss).
+-module(robot_supervisor).
 -author("lfc").
 
 -compile([{parse_transform, lager_transform}]).
