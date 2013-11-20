@@ -51,8 +51,8 @@ terminate(RobotId, MessageDealer, Heartbeat, RobotTimer) ->
   MessageDealer ! stop,
 
   case RobotTimer of
-    Pid -> Pid ! stop;
-    null -> ok
+    null -> ok;
+    Pid -> Pid ! stop
   end,
 
   gen_server:cast(robot_scheduler, {return_robot, RobotId}),
