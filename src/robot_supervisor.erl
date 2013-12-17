@@ -29,7 +29,7 @@ start_robots(0) ->
   ok;
 start_robots(RunningRobotsCount) ->
   gen_server:cast(robot_scheduler, {start_robot, 1}),
-  timer:sleep(5000),
+%%   timer:sleep(5000),
   start_robots(RunningRobotsCount - 1).
 
 init(ReadyRobotIds) ->
