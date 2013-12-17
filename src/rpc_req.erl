@@ -17,7 +17,8 @@ move(X, Y, AccountId) ->
 
 create_account_req(RobotId) ->
   Id = integer_to_list(RobotId),
-  DeviceId = "Erobot" ++ Id,
+%%   DeviceId = "Erobot" ++ Id,
+  DeviceId = "robot-!@#-" ++ Id,
   Name = "Robot" ++ Id,
   CharacterIds = {131012, 131042, 131032},
   Random = gen_server:call(robot_status, {get, next_random, 3}),
