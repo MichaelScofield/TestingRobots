@@ -27,10 +27,14 @@ handle_cast({start_robot, N}, State) ->
   {noreply, NewState};
 handle_cast({return_robot, RobotId}, {ReadyRobotIds, RunningRobotIds}) ->
   lager:info("[RobotScheduler] Stopping robot ~p", [RobotId]),
-  {RobotId, RobotType} = lists:keyfind(RobotId, 1, RunningRobotIds),
-  NewRunningRobotIds = lists:keydelete(RobotId, 1, RunningRobotIds),
-  NewReadyRobotIds = lists:keystore(RobotId, 1, ReadyRobotIds, {RobotId, RobotType}),
-  {noreply, {NewReadyRobotIds, NewRunningRobotIds}}.
+  case lists:keyfind(RobotId, 1, RunningRobotIds) of
+    false ->
+      {noreply, {ReadyRobotIds, RunningRobotIds}};
+    {RobotId, RobotType} ->
+      NewRunningRobotIds = lists:keydelete(RobotId, 1, RunningRobotIds),
+      NewReadyRobotIds = lists:keystore(RobotId, 1, ReadyRobotIds, {RobotId, RobotType}),
+      {noreply, {NewReadyRobotIds, NewRunningRobotIds}}
+  end.
 
 handle_info({'EXIT', From, Reason}, State) ->
   lager:warning("[RobotScheduler] Robot ~p stopped, reason: ~p~n", [From, Reason]),
