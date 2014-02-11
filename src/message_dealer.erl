@@ -12,7 +12,7 @@
 start(RobotId, RobotPid) ->
   {ok, Context} = erlzmq:context(),
   {ok, Socket} = erlzmq:socket(Context, dealer),
-  ok = erlzmq:setsockopt(Socket, identity, pid_to_list(self())),
+  ok = erlzmq:setsockopt(Socket, identity, pid_to_list(self()) ++ integer_to_list(RobotId)),
   ServerAddr = gen_server:call(robot_status, {get, server_addr}),
   ok = erlzmq:connect(Socket, ServerAddr),
   loop(RobotId, RobotPid, Socket, Context).
