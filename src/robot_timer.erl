@@ -18,7 +18,7 @@ tick(moving, RobotId, MessageDealer, Timeout, {X, Y, AccountId}) ->
   NewX = X + gen_server:call(robot_status, {get, next_random, 1800}),
   NewY = Y + gen_server:call(robot_status, {get, next_random, 100}),
   MessageDealer ! {send, rpc_req:move(NewX, NewY, AccountId)},
-  lager:info("[Robot-~p] Moving to (~p,~p)~n", [RobotId, NewX, NewY]),
+%%   lager:info("[Robot-~p] Moving to (~p,~p)~n", [RobotId, NewX, NewY]),
   receive
     stop ->
       lager:warning("[Robot-~p] Timer stop ticking.", [RobotId]),

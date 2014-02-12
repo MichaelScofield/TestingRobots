@@ -38,7 +38,10 @@ loop(RobotId, RobotType, MessageDealer, Heartbeat, RobotTimer) ->
     stop ->
       terminate(RobotId, MessageDealer, Heartbeat, RobotTimer);
     {'EXIT', From, Reason} ->
-      lager:error("[Robot-~p] EXIT from ~p, reason: ~p", [RobotId, From, Reason]),
+      case Reason of
+        ok -> ok;
+        _ -> lager:error("[Robot-~p] EXIT from ~p, reason: ~p", [RobotId, From, Reason])
+      end,
       terminate(RobotId, MessageDealer, Heartbeat, RobotTimer)
   after 600000 ->
     lager:warning("[Robot-~p] Timeout", [RobotId]),

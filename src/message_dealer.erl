@@ -49,8 +49,13 @@ loop(RobotId, RobotPid, Socket, Context) ->
 handle_reply(RobotId, RobotPid, ReplyBin) ->
   ReplyMsg = case catch rpc_pb:decode_transunit(ReplyBin) of
                {error, Error} ->
-                 lager:error("[Robot-~p] Cannot decode reply ~p.~n", [RobotId, ReplyBin]),
-                 exit(Error);
+                 case Error of
+                   <<"WAIT">> ->
+                     exit(ok);
+                   _ ->
+                     lager:error("[Robot-~p] Cannot decode reply ~p.~n", [RobotId, ReplyBin]),
+                     exit(Error)
+                 end;
                Reply ->
                  Reply
              end,
@@ -73,8 +78,7 @@ handle_reply(RobotId, RobotPid, ReplyBin) ->
         _ ->
           lager:warning("[Robot-~p] Received unknown ErrorMsg: ~p~n", [RobotId, ErrorCode])
       end;
-    undefined ->
-      lager:warning("[Robot-~p] Discard unknown reply: ~p~n", [RobotId, ReplyMsg])
+    undefined -> ok
   end.
 
 polling(_Socket, 0, _Delay) ->
