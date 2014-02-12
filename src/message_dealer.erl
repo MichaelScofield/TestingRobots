@@ -47,17 +47,16 @@ loop(RobotId, RobotPid, Socket, Context) ->
   end.
 
 handle_reply(RobotId, RobotPid, ReplyBin) ->
-  ReplyMsg = case catch rpc_pb:decode_transunit(ReplyBin) of
-               {error, Error} ->
-                 case Error of
-                   <<"WAIT">> ->
-                     exit(ok);
-                   _ ->
-                     lager:error("[Robot-~p] Cannot decode reply ~p.~n", [RobotId, ReplyBin]),
-                     exit(Error)
-                 end;
-               Reply ->
-                 Reply
+  ReplyMsg = case ReplyBin of
+               <<"WAIT">> ->
+                 exit(ok);
+               _ -> case catch rpc_pb:decode_transunit(ReplyBin) of
+                      {error, Error} ->
+                        lager:error("[Robot-~p] Cannot decode reply ~p.~n", [RobotId, ReplyBin]),
+                        exit(Error);
+                      Reply ->
+                        Reply
+                    end
              end,
   case rpc_pb:get_extension(ReplyMsg, loginreply) of
     {ok, LoginReply} ->
