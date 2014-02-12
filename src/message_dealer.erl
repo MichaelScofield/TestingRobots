@@ -22,7 +22,7 @@ loop(RobotId, RobotPid, Socket, Context) ->
     stop ->
       erlzmq:close(Socket),
       erlzmq:term(Context),
-      lager:warning("[Robot-~p] Stop dealing with messages.~n", [RobotId]),
+      lager:debug("[Robot-~p] Stop dealing with messages.~n", [RobotId]),
       stop;
     {send, TransUnit} ->
       Bin = list_to_binary(rpc_pb:encode_transunit(TransUnit)),
@@ -49,6 +49,7 @@ loop(RobotId, RobotPid, Socket, Context) ->
 handle_reply(RobotId, RobotPid, ReplyBin) ->
   ReplyMsg = case ReplyBin of
                <<"WAIT">> ->
+                 lager:warning("Waiting..."),
                  exit(ok);
                _ -> case catch rpc_pb:decode_transunit(ReplyBin) of
                       {error, Error} ->

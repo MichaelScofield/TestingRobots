@@ -10,7 +10,7 @@
 pow(RobotId, MessageDealer) ->
   receive
     stop ->
-      lager:warning("[Robot-~p] Stop heartbeating.~n", [RobotId]),
+      lager:debug("[Robot-~p] Stop heartbeating.~n", [RobotId]),
       stop
   after 30000 ->
     MessageDealer ! {send, rpc_req:ping()},

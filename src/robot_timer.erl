@@ -21,7 +21,7 @@ tick(moving, RobotId, MessageDealer, Timeout, {X, Y, AccountId}) ->
 %%   lager:info("[Robot-~p] Moving to (~p,~p)~n", [RobotId, NewX, NewY]),
   receive
     stop ->
-      lager:warning("[Robot-~p] Timer stop ticking.", [RobotId]),
+      lager:debug("[Robot-~p] Timer stop ticking.", [RobotId]),
       stop
   after Timeout ->
     tick(moving, RobotId, MessageDealer, Timeout, {NewX, NewY, AccountId})
