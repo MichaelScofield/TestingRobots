@@ -40,7 +40,7 @@ loop(RobotId, RobotType, MessageDealer, Heartbeat, RobotTimer) ->
     {'EXIT', From, Reason} ->
       case Reason of
         wait ->
-          terminate(RobotId, MessageDealer, Heartbeat, RobotTimer, 10000);
+          terminate(RobotId, MessageDealer, Heartbeat, RobotTimer, 20000);
         _ ->
           lager:error("[Robot-~p] EXIT from ~p, reason: ~p", [RobotId, From, Reason]),
           terminate(RobotId, MessageDealer, Heartbeat, RobotTimer)
