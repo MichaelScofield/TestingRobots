@@ -39,16 +39,21 @@ loop(RobotId, RobotType, MessageDealer, Heartbeat, RobotTimer) ->
       terminate(RobotId, MessageDealer, Heartbeat, RobotTimer);
     {'EXIT', From, Reason} ->
       case Reason of
-        ok -> ok;
-        _ -> lager:error("[Robot-~p] EXIT from ~p, reason: ~p", [RobotId, From, Reason])
-      end,
-      terminate(RobotId, MessageDealer, Heartbeat, RobotTimer)
+        wait ->
+          terminate(RobotId, MessageDealer, Heartbeat, RobotTimer, 10000);
+        _ ->
+          lager:error("[Robot-~p] EXIT from ~p, reason: ~p", [RobotId, From, Reason]),
+          terminate(RobotId, MessageDealer, Heartbeat, RobotTimer)
+      end
   after 600000 ->
     lager:warning("[Robot-~p] Timeout", [RobotId]),
     terminate(RobotId, MessageDealer, Heartbeat, RobotTimer)
   end.
 
 terminate(RobotId, MessageDealer, Heartbeat, RobotTimer) ->
+  terminate(RobotId, MessageDealer, Heartbeat, RobotTimer, now).
+
+terminate(RobotId, MessageDealer, Heartbeat, RobotTimer, Restart) ->
   Heartbeat ! stop,
 
   MessageDealer ! stop,
@@ -59,5 +64,10 @@ terminate(RobotId, MessageDealer, Heartbeat, RobotTimer) ->
   end,
 
   gen_server:cast(robot_scheduler, {return_robot, RobotId}),
+
+  case Restart of
+    now -> ok;
+    MilliSeconds -> timer:sleep(MilliSeconds)
+  end,
   gen_server:cast(robot_scheduler, {start_robot, 1}),
   ok.

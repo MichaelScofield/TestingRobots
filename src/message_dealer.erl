@@ -50,7 +50,7 @@ handle_reply(RobotId, RobotPid, ReplyBin) ->
   ReplyMsg = case ReplyBin of
                <<"WAIT">> ->
                  lager:warning("Waiting..."),
-                 exit(ok);
+                 exit(wait);
                _ -> case catch rpc_pb:decode_transunit(ReplyBin) of
                       {error, Error} ->
                         lager:error("[Robot-~p] Cannot decode reply ~p.~n", [RobotId, ReplyBin]),
